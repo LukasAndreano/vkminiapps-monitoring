@@ -5,10 +5,10 @@ import ReactDOM from "react-dom";
 import bridge from "@vkontakte/vk-bridge";
 import App from "./App";
 
-fetch('https://lukass.ru/api?act=verify&' + window.location.href.slice(window.location.href.indexOf('?') + 1))
+fetch('https://monitoring.lukass.ru/verify?' + window.location.href.slice(window.location.href.indexOf('?') + 1))
     .then(response => response.json())
     .then(data => {
-      if (data.result === 'ok') {
+      if (data.response === 'ok') {
         bridge.send("VKWebAppInit");
         ReactDOM.render(<App />, document.getElementById("root"));
         if (process.env.NODE_ENV === "development") {

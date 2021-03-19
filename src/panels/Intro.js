@@ -9,7 +9,6 @@ import {
 	Button,
 } from '@vkontakte/vkui';
 
-import OverwatchDailyArcadeIcon from '../img/ow_arcade.jpg';
 import '../css/Intro.css';
 
 const Intro = ({id, snackbarError, user, userHasSeenIntro, go}) => {

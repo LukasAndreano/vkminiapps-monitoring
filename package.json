@@ -1,7 +1,7 @@
 {
-  "name": "OWHUB",
-  "version": "1.2.0",
-  "description": "Мини-приложение, показывающее список аркад по игре Overwatch и не только",
+  "name": "MONITORING",
+  "version": "1.0.0",
+  "description": "Мониторинг игровых серверов",
   "main": "index.js",
   "scripts": {
     "start": "cross-env react-scripts start",
@@ -10,7 +10,7 @@
     "deploy": "vk-miniapps-deploy"
   },
   "keywords": [],
-  "author": "Nikita Balin",
+  "author": "Nikita Balin && Jack Lizynov",
   "license": "MIT",
   "devDependencies": {
     "cross-env": "^5.2.1",
