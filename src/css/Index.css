@@ -6,10 +6,18 @@
 	-ms-user-select: none;
 	user-select: none;
 }
+input, input:before, input:after {
+      -webkit-user-select: initial;
+      -khtml-user-select: initial;
+      -moz-user-select: initial;
+      -ms-user-select: initial;
+      user-select: initial;
+}
 .UpdateBlock {
 	margin-bottom: 10px;
 }
 a,a:hover,a:active {
+	width: 100%;
 	text-decoration: none;
 	color: var(--text_primary);
 }
@@ -18,9 +26,6 @@ a,a:hover,a:active {
 }
 .WelcomeBlock .Avatar {
 	padding-bottom: 20px;;
-}
-.Button--sz-l:hover {
-	color: var(--button_secondary_foreground) !important;
 }
 .Tappable--android .SimpleCell--android .PanelHeaderContext--opened  {
 	margin-top: 60px !important;
@@ -33,4 +38,10 @@ a,a:hover,a:active {
 }
 .TabbarItem__in:hover,.Switch:hover {
 	cursor: pointer;
+}
+.Placeholder__in {
+	padding: 12px 32px 24px;
+}
+.ModalCard__actions .Button {
+	width: 97%;
 }

@@ -11,7 +11,7 @@ import {
 
 import '../css/Intro.css';
 
-const Intro = ({id, snackbarError, user, userHasSeenIntro, go}) => {
+const Intro = ({id, user, userHasSeenIntro, go}) => {
 	return (
 		<Panel id={id} centered={true}>
 			{(!userHasSeenIntro && user) && 
@@ -26,7 +26,6 @@ const Intro = ({id, snackbarError, user, userHasSeenIntro, go}) => {
 					</Group>
 				</Fragment>
 			}
-			{snackbarError}
 		</Panel>
 	)
 }

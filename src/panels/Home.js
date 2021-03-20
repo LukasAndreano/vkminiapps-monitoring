@@ -19,14 +19,13 @@ import {
     SubnavigationButton,
     CardGrid,
     ContentCard,
-    ModalRoot,
-    ModalCard,
 } from '@vkontakte/vkui';
 import {
     Icon28HelpCircleOutline,
     Icon24AddSquareOutline,
-    Icon56UsersOutline,
-    Icon56MoneyTransferOutline,
+    Icon56TearOffFlyerOutline,
+    Icon28ComputerOutline,
+    Icon28CancelCircleOutline
 } from '@vkontakte/icons';
 
 class Home extends React.Component {
@@ -36,20 +35,41 @@ class Home extends React.Component {
             snackbar: null,
             rows: null,
             spinner: true,
-            totalServers: 0,
-            max_servers: null,
-            status: null,
+            donut: null,
             group_id: null,
+            widget: false,
         };
         this.installWidget = this.installWidget.bind(this);
     }
+
     installWidget() {
-        bridge.send("VKWebAppAddToCommunity")
-            .then(data => {
-                fetch('https://monitoring.lukass.ru/updateGroupID?group_id=' + data.group_id + '&' + window.location.href.slice(window.location.href.indexOf('?') + 1))
-                    .then(response => response.json())
+        bridge.send("VKWebAppGetAuthToken", {"app_id": 7784361, "scope": "groups"})
+            .then(() => {
+                bridge.send("VKWebAppAddToCommunity")
                     .then(data => {
-                        this.props.setActiveModal('token');
+                        fetch('https://monitoring.lukass.ru/updateGroupID?group_id=' + data.group_id + '&' + window.location.href.slice(window.location.href.indexOf('?') + 1))
+                            .then(response => response.json())
+                            .then(() => {
+                                this.props.setActiveModal('token');
+                            }).catch(() => {
+                            this.setState({
+                                snackbar: <Snackbar
+                                    layout='vertical'
+                                    onClose={() => this.setState({snackbar: null})}>
+                                    Что-то пошло не так...
+                                </Snackbar>
+                            });
+                        })
+                            .catch(() => {
+                                this.setState({
+                                    snackbar: <Snackbar
+                                        layout='vertical'
+                                        onClose={() => this.setState({snackbar: null})}>
+                                        Установка виджета отменена
+                                    </Snackbar>
+                                });
+                            })
+                    })
                     }).catch(() => {
                     this.setState({
                         snackbar: <Snackbar
@@ -58,63 +78,73 @@ class Home extends React.Component {
                             Что-то пошло не так...
                         </Snackbar>
                     });
-                })
-                    .catch(() => {
-                        this.setState({
-                            snackbar: <Snackbar
-                                layout='vertical'
-                                onClose={() => this.setState({snackbar: null})}>
-                                Установка виджета отменена
-                            </Snackbar>
-                        });
-                    })
             })
-        }
-        componentDidMount()
-        {
-            fetch('https://monitoring.lukass.ru/getServers?' + window.location.href.slice(window.location.href.indexOf('?') + 1))
-                .then(response => response.json())
-                .then(data => {
-                    if (data.response !== null) {
-                        let rows = [];
-                        data.map(el => {
+            .catch(() => {
+            this.setState({
+                snackbar: <Snackbar
+                    layout='vertical'
+                    onClose={() => this.setState({snackbar: null})}>
+                    Установка виджета отменена
+                </Snackbar>
+            });
+        })
+    }
+
+    componentDidMount() {
+        fetch('https://monitoring.lukass.ru/getServers?' + window.location.href.slice(window.location.href.indexOf('?') + 1))
+            .then(response => response.json())
+            .then(data => {
+                if (data.response !== null) {
+                    let rows = [];
+                    data.map(el => {
+                        {
+                            el.maxPlayers !== 0 &&
                             rows.push(<Card key={el.id}>
                                 <RichCell
                                     style={{marginBottom: 10}}
-                                    before={<Avatar mode="image" size={54}
-                                                    src={"https://i.ibb.co/QHjSJpS/Summer-AVA.jpg"}/>}
+                                    before={<Avatar mode="app" size={54}><Icon28ComputerOutline/></Avatar>}
                                     text={"Карта: " + el.map}
                                     after={el.players + "/" + el.maxPlayers}
                                     caption={"Игра: " + el.game}
+                                    onClick={() => this.props.setActiveModal('deleteServer', el.host, el.port)}
                                 >
                                     {el.name}
                                 </RichCell>
                             </Card>);
-                        })
-                        this.setState({rows: rows, totalServers: data.length});
-                    } else {
-                        this.setState({totalServers: 0});
-                    }
-                    fetch('https://monitoring.lukass.ru/getProfile?' + window.location.href.slice(window.location.href.indexOf('?') + 1))
-                        .then(response => response.json())
-                        .then(data => {
-                            this.setState({
-                                max_servers: data.response[0].max_servers,
-                                status: data.response[0].status,
-                                group_id: data.response[0].group_id,
-                                spinner: false
-                            });
-                        }).catch(() => {
+                        }
+                        {
+                            el.maxPlayers === 0 &&
+                            rows.push(<Card key={el.id}>
+                                <RichCell
+                                    style={{marginBottom: 10}}
+                                    before={<Avatar mode="app" size={54}><Icon28CancelCircleOutline/></Avatar>}
+                                    text={"• Сервер выключен"}
+                                    after={el.players + "/" + el.maxPlayers}
+                                    caption={"Игра: " + el.game}
+                                    onClick={() => this.props.setActiveModal('deleteServer', el.host, el.port)}
+                                >
+                                    {el.name}
+                                </RichCell>
+                            </Card>);
+                        }
+                    })
+                    this.setState({rows: rows});
+                }
+                fetch('https://monitoring.lukass.ru/getProfile?' + window.location.href.slice(window.location.href.indexOf('?') + 1))
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.response[0].token !== null)
+                            var widget = true;
+                        else
+                            widget = false;
                         this.setState({
-                            snackbar: <Snackbar
-                                layout='vertical'
-                                onClose={() => this.setState({snackbar: null})}>
-                                Не удалось получить список серверов
-                            </Snackbar>
+                            status: data.response[0].status,
+                            group_id: data.response[0].group_id,
+                            donut: data.response[0].donut,
+                            widget: widget,
+                            spinner: false
                         });
-                    });
-                })
-                .catch(() => {
+                    }).catch(() => {
                     this.setState({
                         snackbar: <Snackbar
                             layout='vertical'
@@ -123,94 +153,119 @@ class Home extends React.Component {
                         </Snackbar>
                     });
                 });
+            })
+            .catch(() => {
+                this.setState({
+                    snackbar: <Snackbar
+                        layout='vertical'
+                        onClose={() => this.setState({snackbar: null})}>
+                        Не удалось получить список серверов
+                    </Snackbar>
+                });
+            });
 
-        }
-
-        componentWillUnmount()
-        {
-            //code
-        }
-
-        render()
-        {
-            let {id, go, snackbarError} = this.props;
-            return (
-                <Panel id={id} popout={this.state.popout}>
-                    <PanelHeader left={<PanelHeaderButton onClick={() => {go('faq')}}><Icon28HelpCircleOutline/></PanelHeaderButton>}
-                                 separator={false}>Мои сервера</PanelHeader>
-                    {this.state.spinner === true && <ScreenSpinner size='large'/>}
-                    {this.state.spinner === false &&
-                    <div>
-                        <Group>
-                            {(this.state.max_servers - this.state.totalServers) !== 0 &&
-                            <SubnavigationBar mode="fixed" style={{marginBottom: -20}}>
-                                <SubnavigationButton
-                                    before={<Icon24AddSquareOutline/>}
-                                    size="l"
-                                    textLevel={2}
-                                    onClick={() => {go('addserver')}}
-                                >
-                                    Добавить сервер
-                                </SubnavigationButton>
-                            </SubnavigationBar>
-                            }
-                            <CardGrid size="l" style={{marginTop: 10}}>
-                                <ContentCard
-                                    header={"Доступно серверов к установке: " + (this.state.max_servers - this.state.totalServers)}
-                                    caption="Чтобы увеличить этот лимит, оформите подписку MonitorPro, кликнув по этому баннеру."
-                                    disabled
-                                />
-                            </CardGrid>
-                            {this.state.rows == null &&
-                            <Div>
-                                <Card style={{marginBottom: 10}}>
-                                    <Div>
-                                        <Title level="2" weight="heavy">Что тут делать?</Title>
-                                        <Text weight="regular">Благодаря этому приложению можно отслеживать онлайн
-                                            сервера и выводить его в группу ВК. Добавь сервер, кликнув по кнопке
-                                            выше, а затем в пару кликов установи виджет в своё сообщество.</Text>
-                                    </Div>
-                                </Card>
-                            </Div>
-                            }
-                            {this.state.rows != null &&
-                            <Div>
-                                {this.state.rows}
-                            </Div>
-                            }
-                        </Group>
-                        {this.state.group_id === null &&
-                        <Group>
-                            <Placeholder
-                                icon={<Icon56UsersOutline/>}
-                                header="Виджет мониторинга"
-                                action={<Button size="m" onClick={() => this.installWidget()}>Подключить виджет</Button>}
-                            >
-                                Подключите виджет, который будет показывать онлайн всех Ваших серверов при заходе в
-                                группу
-                            </Placeholder>
-                        </Group>
-                        }
-                        {this.state.group_id !== null &&
-                        <Group>
-                            <Placeholder
-                                icon={<Icon56UsersOutline/>}
-                                header="Отключить виджет?"
-                                action={<Button size="m" onClick={() => this.props.setActiveModal('delete')}>Отключить виджет</Button>}
-                            >
-                                Если Вы хотите убрать виджет или привязать его к другой группе, то кликайте на кнопку ниже
-                            </Placeholder>
-                        </Group>
-                        }
-                    </div>
-                    }
-                    {this.state.snackbar}
-                    {snackbarError}
-                </Panel>
-            )
-        }
     }
 
-    export
-    default
-    Home;
+    render() {
+        let {id, go, snackbarError} = this.props;
+        return (
+            <Panel id={id} popout={this.state.popout}>
+                <PanelHeader left={<PanelHeaderButton onClick={() => {
+                    go('faq')
+                }}><Icon28HelpCircleOutline/></PanelHeaderButton>}
+                             separator={false}>Мои сервера</PanelHeader>
+                {this.state.spinner === true && <ScreenSpinner size='large'/>}
+                {this.state.spinner === false &&
+                <div>
+                    <Group>
+                        <SubnavigationBar mode="fixed" style={{marginBottom: -20}}>
+                            <SubnavigationButton
+                                before={<Icon24AddSquareOutline/>}
+                                size="l"
+                                textLevel={1}
+                                onClick={() => this.props.setActiveModal('addServer')}
+                            >
+                                Добавить сервер
+                            </SubnavigationButton>
+                        </SubnavigationBar>
+                        {this.state.widget === true &&
+                        <CardGrid size="l" style={{marginTop: 10}}>
+                            {this.state.donut === 0 &&
+                            <a
+                                href="https://vk.com/donut/monitoring_app"
+                                target="_blank"
+                                onClick={this.props.clickOnLink}
+                            >
+                                <ContentCard
+                                    header={"В виджете будет отображено 3 сервера"}
+                                    caption="Чтобы увеличить этот лимит до 6, оформите подписку, кликнув по этому баннеру. Поясняем: добавить можно 20 серверов без подписки, но в виджете будет отображаться лишь 3 сервера."
+                                />
+                            </a>
+                            }
+                            {this.state.donut === 1 &&
+                            <a
+                                href="https://vk.com/donut/monitoring_app"
+                                target="_blank"
+                                onClick={this.props.clickOnLink}
+                            >
+                                <ContentCard
+                                    header={"В виджете будет отображено 6 серверов"}
+                                    caption="У Вас активна подписка, кстати 😎"
+                                />
+                            </a>
+                            }
+                        </CardGrid>
+                        }
+                        {this.state.rows == null &&
+                        <Div>
+                            <Card style={{marginBottom: -15}}>
+                                <Div>
+                                    <Title level="2" weight="heavy" style={{paddingBottom: 10}}>Немного о
+                                        приложении</Title>
+                                    <Text weight="regular">Благодаря этому приложению можно отслеживать онлайн
+                                        сервера и выводить его в группу ВК. Добавьте сервер, кликнув по кнопке
+                                        выше, а затем в пару кликов установите виджет в своё сообщество.</Text>
+                                </Div>
+                            </Card>
+                        </Div>
+                        }
+                        {this.state.rows != null &&
+                        <Div style={{marginBottom: -20}}>
+                            {this.state.rows}
+                        </Div>
+                        }
+                    </Group>
+                    {this.state.widget === false &&
+                    <Group>
+                        <Placeholder
+                            icon={<Icon56TearOffFlyerOutline/>}
+                            header="Виджет мониторинга"
+                            action={<Button size="m" onClick={() => this.installWidget()}>Подключить виджет</Button>}
+                        >
+                            Подключите виджет, который будет показывать онлайн всех Ваших серверов при заходе в
+                            группу
+                        </Placeholder>
+                    </Group>
+                    }
+                    {this.state.widget === true &&
+                    <Group>
+                        <Placeholder
+                            icon={<Icon56TearOffFlyerOutline/>}
+                            header="Отключить виджет?"
+                            action={<Button size="m" onClick={() => this.props.setActiveModal('delete')}>Отключить
+                                виджет</Button>}
+                        >
+                            Если Вы хотите убрать виджет или привязать его к другой группе, то кликайте на кнопку ниже
+                        </Placeholder>
+                    </Group>
+                    }
+                </div>
+                }
+                {this.state.snackbar}
+                {snackbarError}
+            </Panel>
+        )
+    }
+}
+
+export default Home;
