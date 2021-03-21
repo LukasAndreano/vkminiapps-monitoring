@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { Fragment } from 'react';
 import {
     Avatar,
     Group,
@@ -16,7 +16,8 @@ import {
 } from '@vkontakte/vkui';
 import {
     Icon28ComputerOutline,
-    Icon28CancelCircleOutline
+    Icon28CancelCircleOutline,
+    Icon36CancelOutline
 } from '@vkontakte/icons';
 
 class InGroupWidget extends React.Component {
@@ -26,6 +27,7 @@ class InGroupWidget extends React.Component {
             snackbar: null,
             rows: null,
             spinner: true,
+            status: true,
         };
     }
 
@@ -33,7 +35,7 @@ class InGroupWidget extends React.Component {
         fetch('https://monitoring.lukass.ru/getServersInGroupWidget?' + window.location.href.slice(window.location.href.indexOf('?') + 1))
             .then(response => response.json())
             .then(data => {
-                if (data.response !== null) {
+                if (data.response !== 'no_servers') {
                     let rows = [];
                     data.map(el => {
                         {
@@ -67,6 +69,8 @@ class InGroupWidget extends React.Component {
                         }
                     })
                     this.setState({rows: rows, spinner: false});
+                } else {
+                    this.setState({status: false, spinner: false});
                 }
             })
             .catch(() => {
@@ -89,13 +93,16 @@ class InGroupWidget extends React.Component {
                 {this.state.spinner === true && <ScreenSpinner size='large'/>}
                 {this.state.spinner === false &&
                 <div>
+                    {this.state.status === true &&
                     <Group>
                         {this.state.rows == null &&
                         <Div>
                             <Card style={{marginBottom: -15}}>
                                 <Div>
-                                    <Title level="2" weight="heavy" style={{paddingBottom: 10}}>Не удалось получить список серверов</Title>
-                                    <Text weight="regular">К сожалению, мы не смогли получить список серверов. Попробуйте позже!</Text>
+                                    <Title level="2" weight="heavy" style={{paddingBottom: 10}}>Не удалось получить
+                                        список серверов</Title>
+                                    <Text weight="regular">К сожалению, мы не смогли получить список серверов.
+                                        Попробуйте позже!</Text>
                                 </Div>
                             </Card>
                         </Div>
@@ -115,6 +122,18 @@ class InGroupWidget extends React.Component {
                             </SubnavigationButton>
                         </SubnavigationBar>
                     </Group>
+                    }
+                    {this.state.status === false &&
+                    <Fragment>
+                        <Group style={{marginTop: 100}}>
+                            <Div className="WelcomeBlock">
+                                <Avatar size={64}><Icon36CancelOutline/></Avatar>
+                                <Title level="1" weight="bold" style={{ marginBottom: 16 }}>Оуч! Тут нет серверов!</Title>
+                                <Text weight="regular">Администратор группы еще не подключил никаких серверов. Обидненько!</Text>
+                            </Div>
+                        </Group>
+                    </Fragment>
+                    }
                 </div>
                 }
                 {this.state.snackbar}

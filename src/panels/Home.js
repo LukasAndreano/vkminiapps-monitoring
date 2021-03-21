@@ -37,7 +37,9 @@ class Home extends React.Component {
             spinner: true,
             donut: null,
             group_id: null,
+            servers: 0,
             widget: false,
+            maxServers: null,
         };
         this.installWidget = this.installWidget.bind(this);
     }
@@ -49,15 +51,7 @@ class Home extends React.Component {
                             .then(response => response.json())
                             .then(() => {
                                 this.props.setActiveModal('token');
-                            }).catch(() => {
-                            this.setState({
-                                snackbar: <Snackbar
-                                    layout='vertical'
-                                    onClose={() => this.setState({snackbar: null})}>
-                                    Что-то пошло не так...
-                                </Snackbar>
-                            });
-                        })
+                            })
                             .catch(() => {
                                 this.setState({
                                     snackbar: <Snackbar
@@ -72,7 +66,7 @@ class Home extends React.Component {
                         snackbar: <Snackbar
                             layout='vertical'
                             onClose={() => this.setState({snackbar: null})}>
-                            Что-то пошло не так...
+                            Установка виджета отменена
                         </Snackbar>
                     });
             })
@@ -125,7 +119,7 @@ class Home extends React.Component {
                             </Card>);
                         }
                     })
-                    this.setState({rows: rows});
+                    this.setState({rows: rows, servers: rows.length});
                 }
                 fetch('https://monitoring.lukass.ru/getProfile?' + window.location.href.slice(window.location.href.indexOf('?') + 1))
                     .then(response => response.json())
@@ -137,6 +131,7 @@ class Home extends React.Component {
                         this.setState({
                             status: data.response[0].status,
                             group_id: data.response[0].group_id,
+                            maxServers: data.response[0].max_servers,
                             donut: data.response[0].donut,
                             widget: widget,
                             spinner: false
@@ -175,6 +170,7 @@ class Home extends React.Component {
                 {this.state.spinner === false &&
                 <div>
                     <Group>
+                        {this.state.maxServers >= this.state.servers &&
                         <SubnavigationBar mode="fixed" style={{marginBottom: -20}}>
                             <SubnavigationButton
                                 before={<Icon24AddSquareOutline/>}
@@ -185,6 +181,7 @@ class Home extends React.Component {
                                 Добавить сервер
                             </SubnavigationButton>
                         </SubnavigationBar>
+                        }
                         {this.state.widget === true &&
                         <CardGrid size="l" style={{marginTop: 10}}>
                             {this.state.donut === 0 &&
@@ -213,7 +210,7 @@ class Home extends React.Component {
                             }
                         </CardGrid>
                         }
-                        {this.state.rows == null &&
+                        {this.state.rows === null &&
                         <Div>
                             <Card style={{marginBottom: -15}}>
                                 <Div>
@@ -226,7 +223,7 @@ class Home extends React.Component {
                             </Card>
                         </Div>
                         }
-                        {this.state.rows != null &&
+                        {this.state.rows !== null &&
                         <Div style={{marginBottom: -20}}>
                             {this.state.rows}
                         </Div>
@@ -240,7 +237,7 @@ class Home extends React.Component {
                                     action={<Button size="m" onClick={() => this.installWidget()}>Подключить
                                         виджет</Button>}
                                 >
-                                    Подключите виджет, который будет показывать онлайн всех Ваших серверов при заходе в
+                                    Подключите виджет, который будет показывать онлайн Ваших серверов при заходе в
                                     группу
                                 </Placeholder>
                             </Group>
@@ -252,7 +249,7 @@ class Home extends React.Component {
                             header="Виджет мониторинга"
                             action={<Button size="m" onClick={() => this.props.setActiveModal('addServer')}>Нет серверов</Button>}
                         >
-                            Подключите виджет, который будет показывать онлайн всех Ваших серверов при заходе в
+                            Подключите виджет, который будет показывать онлайн Ваших серверов при заходе в
                             группу
                         </Placeholder>
                     </Group>

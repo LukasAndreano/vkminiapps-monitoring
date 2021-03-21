@@ -148,7 +148,8 @@ class App extends React.Component {
                         textpage: {
                             title: "Сервер добавлен!",
                             text: "Сервер успешно добавлен и привязан к твоему аккаунту.",
-                            button: "Оки-доки!"
+                            button: "Оки-доки!",
+                            success: true,
                         }
                     });
                     this.go('textpage');
@@ -190,7 +191,8 @@ class App extends React.Component {
                         textpage: {
                             title: "Твоя песенка спета!",
                             text: "Сервер успешно удалён из мониторинга. Если у Вас установлен виджет и в нём есть этот сервер, то через несколько минут он исчезнет.",
-                            button: "Принято!"
+                            button: "Принято!",
+                            success: true,
                         }
                     });
                     this.go('textpage');
@@ -216,16 +218,19 @@ class App extends React.Component {
                         textpage: {
                             title: "Виджет отключен!",
                             text: "Теперь при заходе в группу никто не увидит онлайн ваших серверов :c",
-                            button: "Окей!"
+                            button: "Окей!",
+                            success: true,
                         }
                     });
                     this.go('textpage');
-                } else if (data.response === 'app_removed') {
+                }
+                if (data.response === 'app_removed') {
                     this.setState({
                         textpage: {
                             title: "Оуч! Не получилось!",
-                            text: "Не удалось удалить виджет. Возможно, Вы удалили приложение из своего сообщества?",
-                            button: "Понятно"
+                            text: "Не удалось удалить виджет. Попробуйте позже. Возможно, Вы удалили приложение из своего сообщества?",
+                            button: "Понятно",
+                            success: false,
                         }
                     });
                     this.go('textpage');
@@ -265,7 +270,8 @@ class App extends React.Component {
                                                     textpage: {
                                                         title: "Виджет установлен!",
                                                         text: "Теперь при заходе в группу все увидят онлайн ваших серверов!",
-                                                        button: "Круто!"
+                                                        button: "Круто!",
+                                                        success: true,
                                                     }
                                                 });
                                                 this.go('textpage');
@@ -539,7 +545,10 @@ class App extends React.Component {
                                     required
                                     name="game"
                                     placeholder="Игра"
-                                    options={[{value: 'unturned', label: 'Unturned'}]}
+                                    options={[{value: 'unturned', label: 'Unturned'},
+                                        {value: 'csgo', label: 'Counter-Strike: Global Offensive'},
+                                        {value: 'rust', label: 'Rust'},
+                                        {value: 'arkse', label: 'Ark: Survival Evolved'}]}
                                 />
                             </FormItem>
 
