@@ -33,6 +33,9 @@ a,a:hover,a:active {
 .Div .SimpleCell {
 	border-radius: 15px;
 }
+.Tappable{
+	border-radius: 8px;
+}
 .content {
 	width: 100%;
 }

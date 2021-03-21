@@ -55,15 +55,21 @@ class App extends React.Component {
             history: ['home'],
             activeModal: null,
             modalHistory: [],
+            form: {
+                ip: '',
+                port: '',
+            },
             server: {
                 ip: null,
                 port: null,
+                name: null,
             },
             textpage: {
                 title: null,
                 text: null,
                 button: null,
-            }
+            },
+            loaded: false,
         };
         this.go = this.go.bind(this);
         this.goBack = this.goBack.bind(this);
@@ -88,11 +94,11 @@ class App extends React.Component {
         });
 
         bridge.send('VKWebAppGetUserInfo').then(data => {
-            this.setState({user: data});
+            this.setState({user: data, loaded: true});
         });
 
         if (new URLSearchParams(window.location.search).get('vk_group_id') !== null) {
-            this.setState({activePanel: ROUTES.INGROUPWIDGET});
+            this.go('ingroupwidget');
         } else {
             bridge.send('VKWebAppStorageGet', {
                 keys: Object.values(STORAGE_KEYS),
@@ -131,24 +137,16 @@ class App extends React.Component {
 
     }
 
-    validate(e, type) {
-        if (type === 'ip') {
-            if (/^[^:>#*]+|([^:>#*][^>#*]+[^:>#*])$/.test(e.target.value.substr(e.target.value.length - 1)) === false) {
-                this.setState({value: e.target.value.slice(0, -1)})
-            }
-        }
-    }
-
     submitForm(event) {
         this.setActiveModal(null);
-        fetch('https://monitoring.lukass.ru/addServer?' + window.location.href.slice(window.location.href.indexOf('?') + 1) + '&game=' + event.target.game.value + '&name=' + event.target.name.value + '&ip=' + event.target.ip.value + '&port=' + event.target.port.value)
+        fetch('https://monitoring.lukass.ru/addServer?' + window.location.href.slice(window.location.href.indexOf('?') + 1) + '&game=' + encodeURI(event.target.game.value) + '&name=' + encodeURI(event.target.name.value) + '&ip=' + event.target.ip.value + '&port=' + event.target.port.value)
             .then(response => response.json())
             .then(data => {
                 if (data.response === 'ok') {
                     this.setState({
                         textpage: {
                             title: "Сервер добавлен!",
-                            text: "Сервер успешно привязан к твоему аккаунту.",
+                            text: "Сервер успешно добавлен и привязан к твоему аккаунту.",
                             button: "Оки-доки!"
                         }
                     });
@@ -252,19 +250,16 @@ class App extends React.Component {
                                     fetch('https://monitoring.lukass.ru/installWidget?' + window.location.href.slice(window.location.href.indexOf('?') + 1))
                                         .then(response => response.json())
                                         .then(data => {
-                                            bridge.send("VKWebAppShowCommunityWidgetPreviewBox", {
-                                                "group_id": group_id,
-                                                "type": "compact_list",
-                                                "code": data.response.code.toString()
-                                            });
-                                            this.setState({
-                                                textpage: {
-                                                    title: "Виджет установлен!",
-                                                    text: "Теперь при заходе в группу все увидят онлайн ваших серверов!",
-                                                    button: "Круто!"
-                                                }
-                                            });
-                                            this.go('textpage');
+                                            if (data.response === 'ok') {
+                                                this.setState({
+                                                    textpage: {
+                                                        title: "Виджет установлен!",
+                                                        text: "Теперь при заходе в группу все увидят онлайн ваших серверов!",
+                                                        button: "Круто!"
+                                                    }
+                                                });
+                                                this.go('textpage');
+                                            }
                                         }).catch(() => {
                                         this.setState({
                                             snackbar: <Snackbar
@@ -539,18 +534,15 @@ class App extends React.Component {
                             </FormItem>
 
                             <FormItem top="Название сервера">
-                                <Input type="text" name="name" placeholder="Мой лучший игровой проект!" maxLength={50}/>
+                                <Input type="text" name="name" value={this.state.form.name} onChange={(e) => {this.setState({ form: {name: e.target.value.replace(/[@+#+*+?+&++]/gi, "")} })}} placeholder="Мой лучший игровой проект!" maxLength={50}/>
                             </FormItem>
 
                             <FormLayoutGroup mode="horizontal">
                                 <FormItem top="IP-Адрес сервера">
-                                    <Input name="ip" placeholder="192.168.0.1" required value={this.state.value}
-                                           onChange={(e) => {
-                                               this.validate(e, 'ip')
-                                           }}/>
+                                    <Input name="ip" placeholder="192.168.0.1" required value={this.state.form.ip} onChange={(e) => {this.setState({ form: {ip: e.target.value.replace(/[^\w\s\.+]/gi, "")} })}} maxLength={32} />
                                 </FormItem>
                                 <FormItem top="PORT Сервера">
-                                    <Input name="port" placeholder="27015" required maxLength={5}/>
+                                    <Input name="port" placeholder="27015" required value={this.state.form.port} onChange={(e) => {this.setState({ form: {port: e.target.value.replace(/\D+/g, "")} })}} maxLength={5}/>
                                 </FormItem>
                             </FormLayoutGroup>
 
@@ -567,9 +559,10 @@ class App extends React.Component {
         history.pushState(null, null);
         return (
             <ConfigProvider isWebView={true}>
+                {this.state.loaded === true &&
                 <View activePanel={this.state.activePanel} modal={modal} popout={this.state.popout}
                       onSwipeBack={this.goBack} history={this.state.history}>
-                    <Home id={ROUTES.HOME} go={this.go} clickOnLink={this.clickOnLink} user={this.state.user}
+                    <Home id={ROUTES.HOME} go={this.go} clickOnLink={this.clickOnLink}
                           snackbarError={this.state.snackbar} setActiveModal={this.setActiveModal}/>
                     <Intro id={ROUTES.INTRO} go={this.viewIntro} user={this.state.user}
                            snackbarError={this.state.snackbar}/>
@@ -579,6 +572,7 @@ class App extends React.Component {
                     <InGroupWidget id={ROUTES.INGROUPWIDGET} go={this.go} setActiveModal={this.setActiveModal}
                                    group_id={new URLSearchParams(window.location.search).get('vk_group_id')}/>
                 </View>
+                }
             </ConfigProvider>
         );
     }

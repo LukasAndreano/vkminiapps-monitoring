@@ -19,8 +19,8 @@ const Intro = ({id, user, userHasSeenIntro, go}) => {
 					<Group>
 						<Div className="WelcomeBlock">
 							<Avatar src={user.photo_200} size={100} />
-							<Title level="1" weight="bold" style={{ marginBottom: 16 }}>Текст, {user.first_name}!</Title>
-							<Text weight="regular">Благодаря этому приложению ты в любой момент времени можешь узнать актуальный список аркад, посмотреть мемчики, арты, скриншотики со своим любимым персонажем, а также узнать новости из вселенной Overwatch.</Text>
+							<Title level="1" weight="bold" style={{ marginBottom: 16 }}>Приветствуем, {user.first_name}!</Title>
+							<Text weight="regular">Это приложение, благодаря которому Вы сможете подключить свои сервера и добавить виджет в группу, который будет отображать онлайн серверов.</Text>
 							<Button size="l" stretched mode="secondary" onClick={go}>Окей, понятно!</Button>
 						</Div>
 					</Group>
