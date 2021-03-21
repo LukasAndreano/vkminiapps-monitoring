@@ -68,6 +68,7 @@ class App extends React.Component {
                 title: null,
                 text: null,
                 button: null,
+                success: true,
             },
             loaded: false,
         };
@@ -216,6 +217,15 @@ class App extends React.Component {
                             title: "Виджет отключен!",
                             text: "Теперь при заходе в группу никто не увидит онлайн ваших серверов :c",
                             button: "Окей!"
+                        }
+                    });
+                    this.go('textpage');
+                } else if (data.response === 'app_removed') {
+                    this.setState({
+                        textpage: {
+                            title: "Оуч! Не получилось!",
+                            text: "Не удалось удалить виджет. Возможно, Вы удалили приложение из своего сообщества?",
+                            button: "Понятно"
                         }
                     });
                     this.go('textpage');
@@ -568,7 +578,7 @@ class App extends React.Component {
                            snackbarError={this.state.snackbar}/>
                     <FAQ id={ROUTES.FAQ} go={this.go}/>
                     <Textpage id={ROUTES.TEXTPAGE} title={this.state.textpage.title} text={this.state.textpage.text}
-                              button={this.state.textpage.button} go={this.go}/>
+                              button={this.state.textpage.button} success={this.state.textpage.success} go={this.go}/>
                     <InGroupWidget id={ROUTES.INGROUPWIDGET} go={this.go} setActiveModal={this.setActiveModal}
                                    group_id={new URLSearchParams(window.location.search).get('vk_group_id')}/>
                 </View>

@@ -43,8 +43,6 @@ class Home extends React.Component {
     }
 
     installWidget() {
-        bridge.send("VKWebAppGetAuthToken", {"app_id": 7784361, "scope": "groups"})
-            .then(() => {
                 bridge.send("VKWebAppAddToCommunity")
                     .then(data => {
                         fetch('https://monitoring.lukass.ru/updateGroupID?group_id=' + data.group_id + '&' + window.location.href.slice(window.location.href.indexOf('?') + 1))
@@ -69,7 +67,6 @@ class Home extends React.Component {
                                     </Snackbar>
                                 });
                             })
-                    })
                     }).catch(() => {
                     this.setState({
                         snackbar: <Snackbar
@@ -235,12 +232,25 @@ class Home extends React.Component {
                         </Div>
                         }
                     </Group>
-                    {this.state.widget === false &&
+                    {this.state.widget === false && this.state.rows !== null &&
+                            <Group>
+                                <Placeholder
+                                    icon={<Icon56TearOffFlyerOutline/>}
+                                    header="Виджет мониторинга"
+                                    action={<Button size="m" onClick={() => this.installWidget()}>Подключить
+                                        виджет</Button>}
+                                >
+                                    Подключите виджет, который будет показывать онлайн всех Ваших серверов при заходе в
+                                    группу
+                                </Placeholder>
+                            </Group>
+                    }
+                    {this.state.widget === false && this.state.rows === null &&
                     <Group>
                         <Placeholder
                             icon={<Icon56TearOffFlyerOutline/>}
                             header="Виджет мониторинга"
-                            action={<Button size="m" onClick={() => this.installWidget()}>Подключить виджет</Button>}
+                            action={<Button size="m" onClick={() => this.props.setActiveModal('addServer')}>Нет серверов</Button>}
                         >
                             Подключите виджет, который будет показывать онлайн всех Ваших серверов при заходе в
                             группу
