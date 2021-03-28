@@ -11,8 +11,7 @@ import {
     ScreenSpinner,
     Text,
     RichCell,
-    SubnavigationBar,
-    SubnavigationButton,
+    Button,
 } from '@vkontakte/vkui';
 import {
     Icon28ComputerOutline,
@@ -110,17 +109,9 @@ class InGroupWidget extends React.Component {
                         {this.state.rows != null &&
                         <Div style={{marginBottom: -35}}>
                             {this.state.rows}
+                            <Button size="l" onClick={() => go('home')} stretched mode="secondary" style={{marginTop: 10}}>Хочу такой же виджет!</Button>
                         </Div>
                         }
-                        <SubnavigationBar mode="fixed" style={{marginBottom: -20}}>
-                            <SubnavigationButton
-                                size="l"
-                                textLevel={1}
-                                onClick={() => go('home')}
-                            >
-                                Хочу такой же виджет!
-                            </SubnavigationButton>
-                        </SubnavigationBar>
                     </Group>
                     }
                     {this.state.status === false &&
@@ -130,6 +121,7 @@ class InGroupWidget extends React.Component {
                                 <Avatar size={64}><Icon36CancelOutline/></Avatar>
                                 <Title level="1" weight="bold" style={{ marginBottom: 16 }}>Оуч! Тут нет серверов!</Title>
                                 <Text weight="regular">Администратор группы еще не подключил никаких серверов. Обидненько!</Text>
+                                <Button size="l" onClick={() => go('home')} stretched mode="secondary">Хочу такой же виджет!</Button>
                             </Div>
                         </Group>
                     </Fragment>

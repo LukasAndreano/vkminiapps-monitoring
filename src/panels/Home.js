@@ -45,40 +45,73 @@ class Home extends React.Component {
     }
 
     installWidget() {
-                bridge.send("VKWebAppAddToCommunity")
-                    .then(data => {
-                        fetch('https://monitoring.lukass.ru/updateGroupID?group_id=' + data.group_id + '&' + window.location.href.slice(window.location.href.indexOf('?') + 1))
-                            .then(response => response.json())
-                            .then(() => {
-                                this.props.setActiveModal('token');
-                            })
-                            .catch(() => {
-                                this.setState({
-                                    snackbar: <Snackbar
+        bridge.send("VKWebAppGetAuthToken", {"app_id": 7784361, "scope": "groups"})
+            .then(token => {
+                    bridge.send("VKWebAppAddToCommunity")
+                        .then(data => {
+                            bridge.send("VKWebAppCallAPIMethod", {"method": "groups.get", "params": {"count": "1000", "filter": "admin", "v":"5.130", "access_token":token.access_token}})
+                                .then((data2) => {
+                                    if (data2.response.items.includes(Number(data.group_id))) {
+                                        fetch('https://monitoring.lukass.ru/updateGroupID?group_id=' + data.group_id + '&' + window.location.href.slice(window.location.href.indexOf('?') + 1))
+                                            .then(response => response.json())
+                                            .then((data) => {
+                                                if (data.response === 'ok') {
+                                                    this.props.setActiveModal('token');
+                                                } else {
+                                                    this.setState({
+                                                        snackbar: <Snackbar
+                                                            layout='vertical'
+                                                            onClose={() => this.setState({snackbar: null})}>
+                                                            Нет доступа к сообществу
+                                                        </Snackbar>
+                                                    });
+                                                }
+                                            })
+                                            .catch(() => {
+                                                this.setState({
+                                                    snackbar: <Snackbar
+                                                        layout='vertical'
+                                                        onClose={() => this.setState({snackbar: null})}>
+                                                        Установка виджета отменена
+                                                    </Snackbar>
+                                                });
+                                            })
+                                    } else {
+                                        this.setState({
+                                            snackbar: <Snackbar
+                                                layout='vertical'
+                                                onClose={() => this.setState({snackbar: null})}>
+                                                Нет доступа к сообществу
+                                            </Snackbar>
+                                        });
+                                    }
+                                })
+                        }).catch(() => {
+                        this.setState({
+                            snackbar: <Snackbar
+                                layout='vertical'
+                                onClose={() => this.setState({snackbar: null})}>
+                                Установка виджета отменена
+                            </Snackbar>
+                        });
+                    })
+                }
+            )
+            .catch(
+                () => {
+                    this
+                        .setState({
+                                snackbar:
+
+                                    <Snackbar
                                         layout='vertical'
                                         onClose={() => this.setState({snackbar: null})}>
                                         Установка виджета отменена
                                     </Snackbar>
-                                });
-                            })
-                    }).catch(() => {
-                    this.setState({
-                        snackbar: <Snackbar
-                            layout='vertical'
-                            onClose={() => this.setState({snackbar: null})}>
-                            Установка виджета отменена
-                        </Snackbar>
-                    });
-            })
-            .catch(() => {
-            this.setState({
-                snackbar: <Snackbar
-                    layout='vertical'
-                    onClose={() => this.setState({snackbar: null})}>
-                    Установка виджета отменена
-                </Snackbar>
-            });
-        })
+                            }
+                        )
+                    ;
+                })
     }
 
     componentDidMount() {
@@ -230,24 +263,25 @@ class Home extends React.Component {
                         }
                     </Group>
                     {this.state.widget === false && this.state.rows !== null &&
-                            <Group>
-                                <Placeholder
-                                    icon={<Icon56TearOffFlyerOutline/>}
-                                    header="Виджет мониторинга"
-                                    action={<Button size="m" onClick={() => this.installWidget()}>Подключить
-                                        виджет</Button>}
-                                >
-                                    Подключите виджет, который будет показывать онлайн Ваших серверов при заходе в
-                                    группу
-                                </Placeholder>
-                            </Group>
+                    <Group>
+                        <Placeholder
+                            icon={<Icon56TearOffFlyerOutline/>}
+                            header="Виджет мониторинга"
+                            action={<Button size="m" onClick={() => this.installWidget()}>Подключить
+                                виджет</Button>}
+                        >
+                            Подключите виджет, который будет показывать онлайн Ваших серверов при заходе в
+                            группу
+                        </Placeholder>
+                    </Group>
                     }
                     {this.state.widget === false && this.state.rows === null &&
                     <Group>
                         <Placeholder
                             icon={<Icon56TearOffFlyerOutline/>}
                             header="Виджет мониторинга"
-                            action={<Button size="m" onClick={() => this.props.setActiveModal('addServer')}>Нет серверов</Button>}
+                            action={<Button size="m" onClick={() => this.props.setActiveModal('addServer')}>Нет
+                                серверов</Button>}
                         >
                             Подключите виджет, который будет показывать онлайн Ваших серверов при заходе в
                             группу
