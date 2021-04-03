@@ -1,8 +1,10 @@
-import React, { Fragment } from 'react';
+import React from 'react';
 import {
 	Panel,
 	Group,
 	Div,
+	PanelHeader,
+	PanelHeaderBack,
 	Title,
 	Text,
 	Button,
@@ -19,7 +21,9 @@ import '../css/Intro.css';
 const Textpage = ({id, go, title, text, button, success}) => {
 	return (
 		<Panel id={id} centered={true}>
-				<Fragment>
+				<PanelHeader separator={false} left={<PanelHeaderBack onClick={() => {go('home')}} />} >
+					Информация
+				</PanelHeader>
 					<Group>
 						<Div className="WelcomeBlock">
 							{success && <Avatar size={64}><Icon36DoneOutline/></Avatar>}
@@ -29,7 +33,6 @@ const Textpage = ({id, go, title, text, button, success}) => {
 							<Button size="l" stretched mode="secondary" onClick={() => {go('home')}}>{button}</Button>
 						</Div>
 					</Group>
-				</Fragment>
 		</Panel>
 	)
 }

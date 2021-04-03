@@ -45,73 +45,18 @@ class Home extends React.Component {
     }
 
     installWidget() {
-        bridge.send("VKWebAppGetAuthToken", {"app_id": 7784361, "scope": "groups"})
-            .then(token => {
-                    bridge.send("VKWebAppAddToCommunity")
-                        .then(data => {
-                            bridge.send("VKWebAppCallAPIMethod", {"method": "groups.get", "params": {"count": "1000", "filter": "admin", "v":"5.130", "access_token":token.access_token}})
-                                .then((data2) => {
-                                    if (data2.response.items.includes(Number(data.group_id))) {
-                                        fetch('https://monitoring.lukass.ru/updateGroupID?group_id=' + data.group_id + '&' + window.location.href.slice(window.location.href.indexOf('?') + 1))
-                                            .then(response => response.json())
-                                            .then((data) => {
-                                                if (data.response === 'ok') {
-                                                    this.props.setActiveModal('token');
-                                                } else {
-                                                    this.setState({
-                                                        snackbar: <Snackbar
-                                                            layout='vertical'
-                                                            onClose={() => this.setState({snackbar: null})}>
-                                                            Нет доступа к сообществу
-                                                        </Snackbar>
-                                                    });
-                                                }
-                                            })
-                                            .catch(() => {
-                                                this.setState({
-                                                    snackbar: <Snackbar
-                                                        layout='vertical'
-                                                        onClose={() => this.setState({snackbar: null})}>
-                                                        Установка виджета отменена
-                                                    </Snackbar>
-                                                });
-                                            })
-                                    } else {
-                                        this.setState({
-                                            snackbar: <Snackbar
-                                                layout='vertical'
-                                                onClose={() => this.setState({snackbar: null})}>
-                                                Нет доступа к сообществу
-                                            </Snackbar>
-                                        });
-                                    }
-                                })
-                        }).catch(() => {
-                        this.setState({
-                            snackbar: <Snackbar
-                                layout='vertical'
-                                onClose={() => this.setState({snackbar: null})}>
-                                Установка виджета отменена
-                            </Snackbar>
-                        });
-                    })
-                }
-            )
-            .catch(
-                () => {
-                    this
-                        .setState({
-                                snackbar:
-
-                                    <Snackbar
-                                        layout='vertical'
-                                        onClose={() => this.setState({snackbar: null})}>
-                                        Установка виджета отменена
-                                    </Snackbar>
-                            }
-                        )
-                    ;
-                })
+        bridge.send("VKWebAppAddToCommunity")
+        .then(data => {
+            this.props.setActiveModal('token', null, null, data.group_id);
+        }).catch(() => {
+            this.setState({
+                snackbar: <Snackbar
+                    layout='vertical'
+                    onClose={() => this.setState({snackbar: null})}>
+                    Установка виджета отменена
+                </Snackbar>
+            });
+        })
     }
 
     componentDidMount() {
@@ -127,7 +72,7 @@ class Home extends React.Component {
                                 <RichCell
                                     style={{marginBottom: 10}}
                                     before={<Avatar mode="app" size={54}><Icon28ComputerOutline/></Avatar>}
-                                    text={"Карта: " + el.map}
+                                    text={ el.map ? "Карта: " + el.map : "Карта: неизвестно"}
                                     after={el.players + "/" + el.maxPlayers}
                                     caption={"Игра: " + el.game}
                                     onClick={() => this.props.setActiveModal('deleteServer', el.host, el.port)}

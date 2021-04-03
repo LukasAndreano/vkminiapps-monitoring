@@ -43,7 +43,7 @@ class InGroupWidget extends React.Component {
                                 <RichCell
                                     style={{marginBottom: 10}}
                                     before={<Avatar mode="app" size={54}><Icon28ComputerOutline/></Avatar>}
-                                    text={"Карта: " + el.map}
+                                    text={ el.map ? "Карта: " + el.map : "Карта: неизвестно"}
                                     after={el.players + "/" + el.maxPlayers}
                                     caption={"Игра: " + el.game}
                                     onClick={() => this.props.setActiveModal('connectToTheServer', el.host, el.port)}
@@ -59,6 +59,7 @@ class InGroupWidget extends React.Component {
                                     style={{marginBottom: 10}}
                                     before={<Avatar mode="app" size={54}><Icon28CancelCircleOutline/></Avatar>}
                                     text={"• Сервер выключен"}
+                                    disabled
                                     after={el.players + "/" + el.maxPlayers}
                                     caption={"Игра: " + el.game}
                                 >
@@ -74,11 +75,8 @@ class InGroupWidget extends React.Component {
             })
             .catch(() => {
                 this.setState({
-                    snackbar: <Snackbar
-                        layout='vertical'
-                        onClose={() => this.setState({snackbar: null})}>
-                        Не удалось получить список серверов
-                    </Snackbar>
+                    status: false,
+                    spinner: false,
                 });
             });
 
@@ -120,7 +118,7 @@ class InGroupWidget extends React.Component {
                             <Div className="WelcomeBlock">
                                 <Avatar size={64}><Icon36CancelOutline/></Avatar>
                                 <Title level="1" weight="bold" style={{ marginBottom: 16 }}>Оуч! Тут нет серверов!</Title>
-                                <Text weight="regular">Администратор группы еще не подключил никаких серверов. Обидненько!</Text>
+                                <Text weight="regular">Администратор группы еще не подключил никаких серверов или они не смогли загрузиться. Обидненько!</Text>
                                 <Button size="l" onClick={() => go('home')} stretched mode="secondary">Хочу такой же виджет!</Button>
                             </Div>
                         </Group>

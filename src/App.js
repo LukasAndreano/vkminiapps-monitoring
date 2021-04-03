@@ -1,6 +1,7 @@
 import React, {useState} from 'react';
 import bridge from '@vkontakte/vk-bridge';
 import '@vkontakte/vkui/dist/vkui.css';
+import {platform} from '@vkontakte/vkui';
 import {
     View,
     Snackbar,
@@ -53,12 +54,12 @@ class App extends React.Component {
             popout: <ScreenSpinner size='large'/>,
             snackbar: null,
             history: ['home'],
+            groupID: null,
             activeModal: null,
             modalHistory: [],
-            form: {
-                ip: '',
-                port: '',
-            },
+            ip: '',
+            name: '',
+            port: '',
             server: {
                 ip: null,
                 port: null,
@@ -114,54 +115,104 @@ class App extends React.Component {
         window.addEventListener("popstate", this.AndroidBackButton);
 
         window.addEventListener('offline', () => {
-            bridge.send('VKWebAppDisableSwipeBack');
+            bridge.send('VKWebAppDisableSwipeBack')
             this.setState({
                 activePanel: ROUTES.HOME, online: false, history: ['home'], snackbar: <Snackbar
                     layout='vertical'
+                    duration="1000"
                     onClose={() => this.setState({snackbar: null})}>
                     Потеряно соединение с интернетом
                 </Snackbar>
-            });
-        });
+            })
+        })
 
         window.addEventListener('online', () => {
             this.setState({
-                online: true, snackbar: <Snackbar
-                    layout='vertical'
-                    onClose={() => this.setState({snackbar: null})}>
-                    Соединение восстановлено
-                </Snackbar>
+                online: true
             })
-        });
+            this.setState({
+                textpage: {
+                    title: "Оу, кто вернулся?",
+                    text: "Теперь ты можешь продолжить наслаждаться приложением!",
+                    button: "Окей, понятно!",
+                    success: true,
+                }
+            });
+            this.go('textpage');
+        })
 
         this.setState({popout: null});
-
     }
 
     submitForm(event) {
         this.setActiveModal(null);
-        fetch('https://monitoring.lukass.ru/addServer?' + window.location.href.slice(window.location.href.indexOf('?') + 1) + '&game=' + encodeURI(event.target.game.value) + '&name=' + encodeURI(event.target.name.value) + '&ip=' + event.target.ip.value + '&port=' + event.target.port.value)
-            .then(response => response.json())
-            .then(data => {
-                if (data.response === 'ok') {
-                    this.setState({
-                        textpage: {
-                            title: "Сервер добавлен!",
-                            text: "Сервер успешно добавлен и привязан к твоему аккаунту.",
-                            button: "Оки-доки!",
-                            success: true,
-                        }
-                    });
-                    this.go('textpage');
-                } else if (data.response === 'limit') {
-                    this.setState({
-                        snackbar: <Snackbar
-                            layout='vertical'
-                            onClose={() => this.setState({snackbar: null})}>
-                            Достигнут лимит количества серверов
-                        </Snackbar>
-                    });
-                } else {
+        if (this.state.ip !== undefined && this.state.port !== undefined && this.state.name !== undefined) {
+            if (this.state.ip.trim() === '' || this.state.port.trim() === '' || this.state.name.trim() === '') {
+                this.setState({
+                    snackbar: <Snackbar
+                        layout='vertical'
+                        duration="3000"
+                        onClose={() => this.setState({snackbar: null})}>
+                        Поля "IP", "Port", "Название сервера" не должны быть пустыми.
+                    </Snackbar>
+                })
+            } else {
+                fetch('https://monitoring.lukass.ru/addServer?' + window.location.href.slice(window.location.href.indexOf('?') + 1) + '&game=' + encodeURI(event.target.game.value) + '&name=' + encodeURI(this.state.name.trim()) + '&ip=' + this.state.ip.trim() + '&port=' + this.state.port.trim())
+                .then(response => response.json())
+                .then(data => {
+                    if (data.response === 'ok') {
+                        this.setState({
+                            ip: undefined,
+                            port: undefined,
+                            name: undefined,
+                            game: undefined,
+                            textpage: {
+                                title: "Сервер добавлен!",
+                                text: "Сервер успешно добавлен и привязан к твоему аккаунту.",
+                                button: "Оки-доки!",
+                                success: true,
+                            }
+                        });
+                        this.go('textpage');
+                    } else if (data.response === 'limit') {
+                        this.setState({
+                            snackbar: <Snackbar
+                                layout='vertical'
+                                duration="1500"
+                                onClose={() => this.setState({snackbar: null})}>
+                                Достигнут лимит количества серверов
+                            </Snackbar>
+                        });
+                    } else if (data.response === 'server_already_added') {
+                        this.setState({
+                            snackbar: <Snackbar
+                                layout='vertical'
+                                duration="1500"
+                                onClose={() => this.setState({snackbar: null})}>
+                                Сервер с таким айпи и портом уже существует.
+                            </Snackbar>
+                        });
+                    } else if (data.response === 'wrong_ip') {
+                        this.setState({
+                            snackbar: <Snackbar
+                                layout='vertical'
+                                duration="1500"
+                                onClose={() => this.setState({snackbar: null})}>
+                                Неверный адрес сервера
+                            </Snackbar>
+                        });
+                    } else {
+                        this.setState({
+                            snackbar: <Snackbar
+                                layout='vertical'
+                                duration="1500"
+                                onClose={() => this.setState({snackbar: null})}>
+                                Упс, что-то пошло не так...
+                            </Snackbar>
+                        });
+                    }
+                })
+                .catch(() => {
                     this.setState({
                         snackbar: <Snackbar
                             layout='vertical'
@@ -169,17 +220,18 @@ class App extends React.Component {
                             Упс, что-то пошло не так...
                         </Snackbar>
                     });
-                }
-            })
-            .catch(() => {
-                this.setState({
-                    snackbar: <Snackbar
-                        layout='vertical'
-                        onClose={() => this.setState({snackbar: null})}>
-                        Упс, что-то пошло не так...
-                    </Snackbar>
                 });
-            });
+            }
+        } else {
+            this.setState({
+                snackbar: <Snackbar
+                    layout='vertical'
+                    duration="3000"
+                    onClose={() => this.setState({snackbar: null})}>
+                    Поля "IP", "Port", "Название сервера" не должны быть пустыми.
+                </Snackbar>
+            })
+        }
     }
 
     removeServer() {
@@ -248,92 +300,88 @@ class App extends React.Component {
     }
 
     getCommunityToken() {
-        fetch('https://monitoring.lukass.ru/getProfile?' + window.location.href.slice(window.location.href.indexOf('?') + 1))
-            .then(response => response.json())
-            .then(data => {
-                let group_id = Number(data.response[0].group_id);
-                bridge.send("VKWebAppGetCommunityToken", {
-                    "app_id": 7784361,
-                    "group_id": group_id,
-                    "scope": "app_widget"
-                })
-                    .then(data => {
-                        fetch('https://monitoring.lukass.ru/updateToken?token=' + data.access_token + '&' + window.location.href.slice(window.location.href.indexOf('?') + 1))
+        var group_id = Number(this.state.groupID);
+        bridge.send("VKWebAppGetCommunityToken", {
+            "app_id": 7784361,
+            "group_id": group_id,
+            "scope": "app_widget, manage"
+        })
+        .then(data => {
+            fetch('https://monitoring.lukass.ru/updateToken?token=' + data.access_token + '&' + window.location.href.slice(window.location.href.indexOf('?') + 1))
+                .then(response => response.json())
+                .then(data => {
+                    if (data.response === 'ok') {
+                        this.setState({
+                            snackbar: <Snackbar
+                                layout='vertical'
+                                duration="2000"
+                                onClose={() => this.setState({snackbar: null})}>
+                                Устанавливаем виджет...
+                            </Snackbar>
+                        });
+                        fetch('https://monitoring.lukass.ru/installWidget?group_id=' + group_id + "&" + window.location.href.slice(window.location.href.indexOf('?') + 1))
                             .then(response => response.json())
                             .then(data => {
                                 if (data.response === 'ok') {
-                                    fetch('https://monitoring.lukass.ru/installWidget?' + window.location.href.slice(window.location.href.indexOf('?') + 1))
-                                        .then(response => response.json())
-                                        .then(data => {
-                                            if (data.response === 'ok') {
-                                                this.setState({
-                                                    textpage: {
-                                                        title: "Виджет установлен!",
-                                                        text: "Теперь при заходе в группу все увидят онлайн ваших серверов!",
-                                                        button: "Круто!",
-                                                        success: true,
-                                                    }
-                                                });
-                                                this.go('textpage');
-                                            }
-                                        }).catch(() => {
-                                        this.setState({
-                                            snackbar: <Snackbar
-                                                layout='vertical'
-                                                onClose={() => this.setState({snackbar: null})}>
-                                                Не удалось установить виджет
-                                            </Snackbar>
-                                        });
-                                    });
-
-                                } else {
                                     this.setState({
-                                        snackbar: <Snackbar
-                                            layout='vertical'
-                                            onClose={() => this.setState({snackbar: null})}>
-                                            Ошибка при установке виджета!
-                                        </Snackbar>
+                                        textpage: {
+                                            title: "Виджет установлен!",
+                                            text: "Теперь при заходе в группу все увидят онлайн ваших серверов!",
+                                            button: "Круто!",
+                                            success: true,
+                                        }
                                     });
+                                    this.go('textpage');
                                 }
                             }).catch(() => {
                             this.setState({
                                 snackbar: <Snackbar
                                     layout='vertical'
                                     onClose={() => this.setState({snackbar: null})}>
-                                    Что-то пошло не так...
+                                    Не удалось установить виджет
                                 </Snackbar>
                             });
-                        })
-                            .catch(() => {
-                                this.setState({
-                                    snackbar: <Snackbar
-                                        layout='vertical'
-                                        onClose={() => this.setState({snackbar: null})}>
-                                        Установка виджета отменена
-                                    </Snackbar>
-                                });
-                            })
-                    }).catch(() => {
+                        });
+
+                    } else {
+                        this.setState({
+                            snackbar: <Snackbar
+                                layout='vertical'
+                                onClose={() => this.setState({snackbar: null})}>
+                                Ошибка при установке виджета!
+                            </Snackbar>
+                        });
+                    }
+                }).catch(() => {
+                this.setState({
+                    snackbar: <Snackbar
+                        layout='vertical'
+                        onClose={() => this.setState({snackbar: null})}>
+                        Что-то пошло не так...
+                    </Snackbar>
+                });
+            })
+                .catch(() => {
                     this.setState({
                         snackbar: <Snackbar
                             layout='vertical'
                             onClose={() => this.setState({snackbar: null})}>
-                            Не удалось получить токен сообщества
+                            Установка виджета отменена
                         </Snackbar>
                     });
-                });
-            }).catch(() => {
-            this.setState({
-                snackbar: <Snackbar
-                    layout='vertical'
-                    onClose={() => this.setState({snackbar: null})}>
-                    Не удалось получить список серверов
-                </Snackbar>
-            });
+                })
+        }).catch(() => {
+        this.setState({
+            snackbar: <Snackbar
+                layout='vertical'
+                onClose={() => this.setState({snackbar: null})}>
+                Не удалось получить токен сообщества
+            </Snackbar>
         });
+    });
     }
 
-    setActiveModal(activeModal, host, port) {
+    setActiveModal(activeModal, host, port, groupID) {
         host = host || null;
         port = port || null;
         activeModal = activeModal || null;
@@ -350,6 +398,7 @@ class App extends React.Component {
         this.setState({
             activeModal,
             modalHistory,
+            groupID,
             server: {ip: host, port: port},
         });
     };
@@ -429,10 +478,14 @@ class App extends React.Component {
     }
 
     AndroidBackButton = () => {
-        if (this.state.activePanel !== ROUTES.HOME && this.state.activePanel !== ROUTES.INTRO) {
-            this.goBack();
+        if (this.state.activeModal !== null) {
+            this.setActiveModal(null);
         } else {
-            bridge.send("VKWebAppClose", {"status": "success"});
+            if (this.state.activePanel !== ROUTES.HOME && this.state.activePanel !== ROUTES.INTRO) {
+                this.goBack();
+            } else {
+                bridge.send("VKWebAppClose", {"status": "success"});
+            }
         }
     }
 
@@ -513,15 +566,23 @@ class App extends React.Component {
                     }}
                     icon={<Icon56LinkCircleOutline/>}
                     header="Подключение к серверу"
-                    subheader={"Нажмите на кнопку ниже и мы перенаправим Вас на сервер. Если по каким-либо причинам кнопка не работает, то подключитесь напрямую: " + this.state.server.ip + ":" + this.state.server.port}
+                    subheader={"Данные для подключения к игровому серверу: " + this.state.server.ip + ":" + this.state.server.port}
                     actions={
-                        <a href={"steam://connect/" + this.state.server.ip + ":" + this.state.server.port} target="_blank">
-                            <Button size="l" mode="primary" onClick={() => {
-                                this.setActiveModal(null);
-                            }}>
-                                Подключиться к серверу
-                            </Button>
-                        </a>
+                            <a href={"steam://connect/" + this.state.server.ip + ":" + this.state.server.port} target="_blank">
+                                {platform() == 'vkcom' &&
+                                <Button size="l" mode="primary" onClick={() => {
+                                    this.setActiveModal(null);
+                                }}>
+                                    Подключиться к серверу
+                                </Button>
+                                }
+                                {platform() != 'vkcom' &&
+                                <Button size="l" mode="primary" onClick={() => {
+                                    this.setActiveModal(null);
+                                }}>
+                                    Окей, понятно!
+                                </Button>}
+                            </a>
                     }
                 >
 
@@ -545,23 +606,39 @@ class App extends React.Component {
                                     required
                                     name="game"
                                     placeholder="Игра"
+                                    value={this.state.game}
+                                    onChange={(e) => {this.setState({game: e.target.value})}}
                                     options={[{value: 'unturned', label: 'Unturned'},
                                         {value: 'csgo', label: 'Counter-Strike: Global Offensive'},
                                         {value: 'rust', label: 'Rust'},
-                                        {value: 'arkse', label: 'Ark: Survival Evolved'}]}
+                                        {value: 'arkse', label: 'Ark: Survival Evolved'},
+                                        {value: 'arma3', label: 'ARMA 3'},
+                                        {value: 'bf3', label: 'Battlefield 3'},
+                                        {value: 'bf4', label: 'Battlefield 4'},
+                                        {value: 'cs16', label: 'Counter-Strike 1.6'},
+                                        {value: 'cscz', label: 'Counter-Strike: Condition Zero'},
+                                        {value: 'css', label: 'Counter-Strike: Source'},
+                                        {value: 'garrysmod', label: "Garry's Mod"},
+                                        {value: 'fivem', label: 'Grand Theft Auto V - FiveM'},
+                                        {value: 'killingfloor2', label: 'Killing Floor 2'},
+                                        {value: 'left4dead2', label: 'Left 4 Dead 2'},
+                                        {value: 'minecraft', label: 'Minecraft'},
+                                        {value: 'minecraftbe', label: 'Minecraft: Bedrock Edition'},
+                                        {value: 'tf2', label: 'Team Fortress 2'},
+                                        {value: 'valheim', label: 'Valheim'}]}
                                 />
                             </FormItem>
 
                             <FormItem top="Название сервера">
-                                <Input type="text" name="name" value={this.state.form.name} onChange={(e) => {this.setState({ form: {name: e.target.value.replace(/[@+#+*+?+&++]/gi, "")} })}} placeholder="Мой лучший игровой проект!" maxLength={50}/>
+                                <Input type="text" name="name" value={this.state.name} onChange={(e) => {this.setState({ name: e.target.value.replace(/[@+#+*+?+&++]/gi, "").replace(/\n/, '')} )}} placeholder="Мой лучший игровой проект!" maxLength={50}/>
                             </FormItem>
 
                             <FormLayoutGroup mode="horizontal">
                                 <FormItem top="IP-Адрес сервера">
-                                    <Input name="ip" placeholder="192.168.0.1" required value={this.state.form.ip} onChange={(e) => {this.setState({ form: {ip: e.target.value.replace(/[^\w\s\.+]/gi, "")} })}} maxLength={32} />
+                                    <Input name="ip" placeholder="192.168.0.1" required value={this.state.ip} onChange={(e) => {this.setState({ ip: e.target.value.replace(/[^\w\s\.+]/gi, "")} )}} maxLength={32} />
                                 </FormItem>
                                 <FormItem top="PORT Сервера">
-                                    <Input name="port" placeholder="27015" required value={this.state.form.port} onChange={(e) => {this.setState({ form: {port: e.target.value.replace(/\D+/g, "")} })}} maxLength={5}/>
+                                    <Input name="port" type="tel" placeholder="27015" required value={this.state.port} onChange={(e) => {this.setState({ port: e.target.value.replace(/\D+/g, "")} )}} maxLength={5}/>
                                 </FormItem>
                             </FormLayoutGroup>
 

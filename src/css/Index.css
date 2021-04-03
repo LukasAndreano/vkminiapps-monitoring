@@ -48,3 +48,11 @@ a,a:hover,a:active {
 .ModalCard__actions .Button {
 	width: 97%;
 }
+@media screen and (width: 320px) {
+	.ModalRoot__modal {
+		width: 95%;
+	}
+}
+.RichCell__caption {
+	padding-bottom: 2px;
+}
