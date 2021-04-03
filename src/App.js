@@ -216,11 +216,13 @@ class App extends React.Component {
         fetch2('deleteWidget').then(data => {
             switch(data.response) {
                 case 'ok':
-                    this.setTextpage("Виджет отключен!", "Теперь при заходе в группу никто не увидит онлайн ваших серверов :c", "Окей!")
+                    this.setActiveModal(null)
+                    setTimeout(() => {this.setTextpage("Виджет отключен!", "Теперь при заходе в группу никто не увидит онлайн ваших серверов :c", "Окей!")}, 350)
                 break;
 
                 case 'flood_control':
-                    this.setTextpage("Ох, флуд-контроль!", "Не удалось удалить виджет. Повторите попытку через несколько секунд.", "Без проблем", false)
+                    this.setActiveModal(null)
+                    setTimeout(() => {this.setTextpage("Ох, флуд-контроль!", "Не удалось удалить виджет. Повторите попытку через несколько секунд.", "Без проблем", false)}, 350)
                 break;
 
                 case 'app_removed':
@@ -529,15 +531,15 @@ class App extends React.Component {
                             </FormItem>
 
                             <FormItem top="Название сервера">
-                                <Input type="text" name="name" value={this.state.name} onChange={(e) => {this.setState({ name: e.target.value.replace(/[@+#+*+?+&++]/gi, "").replace(/\n/, '')} )}} placeholder="Мой лучший игровой проект!" maxLength={50}/>
+                                <Input type="text" name="name" value={this.state.name} autocomplete="off" onChange={(e) => {this.setState({ name: e.target.value.replace(/[@+#+*+?+&++]/gi, "").replace(/\n/, '')} )}} placeholder="Мой лучший игровой проект!" maxLength={50}/>
                             </FormItem>
 
                             <FormLayoutGroup mode="horizontal">
                                 <FormItem top="IP-Адрес сервера">
-                                    <Input name="ip" placeholder="192.168.0.1" required value={this.state.ip} onChange={(e) => {this.setState({ ip: e.target.value.replace(/[^\w\s\.+]/gi, "")} )}} maxLength={32} />
+                                    <Input name="ip" placeholder="192.168.0.1" required value={this.state.ip} autocomplete="off" onChange={(e) => {this.setState({ ip: e.target.value.replace(/[^\w\s\.+]/gi, "")} )}} maxLength={32} />
                                 </FormItem>
                                 <FormItem top="PORT Сервера">
-                                    <Input name="port" inputMode="numeric" placeholder="27015" required value={this.state.port} onChange={(e) => {this.setState({ port: e.target.value.replace(/\D+/g, "")} )}} maxLength={5}/>
+                                    <Input name="port" inputMode="numeric" placeholder="27015" required value={this.state.port} autocomplete="off" onChange={(e) => {this.setState({ port: e.target.value.replace(/\D+/g, "")} )}} maxLength={5}/>
                                 </FormItem>
                             </FormLayoutGroup>
 
