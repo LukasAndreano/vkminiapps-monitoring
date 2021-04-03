@@ -1,8 +1,8 @@
 import React from 'react';
-import Panel from '@vkontakte/vkui/dist/components/Panel/Panel';
-import PanelHeader from '@vkontakte/vkui/dist/components/PanelHeader/PanelHeader';
-import PanelHeaderBack from '@vkontakte/vkui/dist/components/PanelHeaderBack/PanelHeaderBack';
 import {
+	Panel,
+	PanelHeader,
+	PanelHeaderBack,
 	Group,
 	ContentCard,
 	CardGrid,
@@ -38,7 +38,7 @@ class FAQ extends React.Component {
 							subtitle="ИНФОРМАЦИЯ ПРО ПРИЛОЖЕНИЕ"
 							disabled
 							header="Приложение"
-							text="Текущая версия приложения: 1.0.0. Разработчики: Никита Балин, Jack Lizynov"
+							text="Текущая версия приложения: 1.0.1. Разработчики: Никита Балин, Jack Lizynov"
 							maxheight={200}
 						/>
 					</CardGrid>

@@ -1,4 +1,5 @@
 import React from 'react';
+import fetch2 from '../components/Fetch'
 import bridge from '@vkontakte/vk-bridge';
 import {
     Avatar,
@@ -6,7 +7,6 @@ import {
     Group,
     PanelHeader,
     Panel,
-    Snackbar,
     Card,
     Div,
     Placeholder,
@@ -32,7 +32,6 @@ class Home extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
-            snackbar: null,
             rows: null,
             spinner: true,
             donut: null,
@@ -47,97 +46,73 @@ class Home extends React.Component {
     installWidget() {
         bridge.send("VKWebAppAddToCommunity")
         .then(data => {
-            this.props.setActiveModal('token', null, null, data.group_id);
+            this.props.setActiveModal('token', null, null, data.group_id)
         }).catch(() => {
-            this.setState({
-                snackbar: <Snackbar
-                    layout='vertical'
-                    onClose={() => this.setState({snackbar: null})}>
-                    Установка виджета отменена
-                </Snackbar>
-            });
+            this.props.setSnackbar('Ладно! Установка виджета отменена...', 2000)
         })
     }
 
     componentDidMount() {
-        fetch('https://monitoring.lukass.ru/getServers?' + window.location.href.slice(window.location.href.indexOf('?') + 1))
-            .then(response => response.json())
-            .then(data => {
-                if (data.response !== null) {
-                    let rows = [];
-                    data.map(el => {
-                        {
-                            el.maxPlayers !== 0 &&
-                            rows.push(<Card key={el.id}>
-                                <RichCell
-                                    style={{marginBottom: 10}}
-                                    before={<Avatar mode="app" size={54}><Icon28ComputerOutline/></Avatar>}
-                                    text={ el.map ? "Карта: " + el.map : "Карта: неизвестно"}
-                                    after={el.players + "/" + el.maxPlayers}
-                                    caption={"Игра: " + el.game}
-                                    onClick={() => this.props.setActiveModal('deleteServer', el.host, el.port)}
-                                >
-                                    {el.name}
-                                </RichCell>
-                            </Card>);
-                        }
-                        {
-                            el.maxPlayers === 0 &&
-                            rows.push(<Card key={el.id}>
-                                <RichCell
-                                    style={{marginBottom: 10}}
-                                    before={<Avatar mode="app" size={54}><Icon28CancelCircleOutline/></Avatar>}
-                                    text={"• Сервер выключен"}
-                                    after={el.players + "/" + el.maxPlayers}
-                                    caption={"Игра: " + el.game}
-                                    onClick={() => this.props.setActiveModal('deleteServer', el.host, el.port)}
-                                >
-                                    {el.name}
-                                </RichCell>
-                            </Card>);
-                        }
-                    })
-                    this.setState({rows: rows, servers: rows.length});
-                }
-                fetch('https://monitoring.lukass.ru/getProfile?' + window.location.href.slice(window.location.href.indexOf('?') + 1))
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.response[0].token !== null)
-                            var widget = true;
-                        else
-                            widget = false;
-                        this.setState({
-                            status: data.response[0].status,
-                            group_id: data.response[0].group_id,
-                            maxServers: data.response[0].max_servers,
-                            donut: data.response[0].donut,
-                            widget: widget,
-                            spinner: false
-                        });
-                    }).catch(() => {
-                    this.setState({
-                        snackbar: <Snackbar
-                            layout='vertical'
-                            onClose={() => this.setState({snackbar: null})}>
-                            Не удалось получить список серверов
-                        </Snackbar>
-                    });
-                });
-            })
-            .catch(() => {
-                this.setState({
-                    snackbar: <Snackbar
-                        layout='vertical'
-                        onClose={() => this.setState({snackbar: null})}>
-                        Не удалось получить список серверов
-                    </Snackbar>
-                });
+        fetch2('getServers').then(data => {
+            if (data.response !== null) {
+                let rows = [];
+                data.map(el => {
+                    {
+                        el.maxPlayers !== 0 &&
+                        rows.push(<Card key={el.id}>
+                            <RichCell
+                                style={{marginBottom: 10}}
+                                before={<Avatar mode="app" size={54}><Icon28ComputerOutline/></Avatar>}
+                                text={ el.map ? "Карта: " + el.map : "Карта: неизвестно"}
+                                after={el.players + "/" + el.maxPlayers}
+                                caption={"Игра: " + el.game}
+                                onClick={() => this.props.setActiveModal('deleteServer', el.host, el.port)}
+                            >
+                                {el.name}
+                            </RichCell>
+                        </Card>);
+                    }
+                    {
+                        el.maxPlayers === 0 &&
+                        rows.push(<Card key={el.id}>
+                            <RichCell
+                                style={{marginBottom: 10}}
+                                before={<Avatar mode="app" size={54}><Icon28CancelCircleOutline/></Avatar>}
+                                text={"• Сервер выключен"}
+                                after={el.players + "/" + el.maxPlayers}
+                                caption={"Игра: " + el.game}
+                                onClick={() => this.props.setActiveModal('deleteServer', el.host, el.port)}
+                            >
+                                {el.name}
+                            </RichCell>
+                        </Card>);
+                    }
+                })
+                this.setState({rows: rows, servers: rows.length});
+            }
+            fetch2('getProfile').then(data => {
+                if (data.response[0].token !== null)
+                var widget = true;
+            else
+                widget = false;
+            this.setState({
+                status: data.response[0].status,
+                group_id: data.response[0].group_id,
+                maxServers: data.response[0].max_servers,
+                donut: data.response[0].donut,
+                widget: widget,
+                spinner: false
             });
-
+            }).catch(() => {
+                this.props.setSnackbar('Не удалось загрузить список серверов', 2000)
+            });
+        }).catch(() => {
+            this.props.setSnackbar('Не удалось загрузить список серверов', 2000)
+        });
     }
 
     render() {
-        let {id, go, snackbarError} = this.props;
+        let {id, go, snackbar} = this.props;
         return (
             <Panel id={id} popout={this.state.popout}>
                 <PanelHeader left={<PanelHeaderButton onClick={() => {
@@ -247,8 +222,7 @@ class Home extends React.Component {
                     }
                 </div>
                 }
-                {this.state.snackbar}
-                {snackbarError}
+                {snackbar}
             </Panel>
         )
     }

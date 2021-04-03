@@ -1,5 +1,6 @@
 import React, {useState} from 'react';
 import bridge from '@vkontakte/vk-bridge';
+import fetch2 from './components/Fetch'
 import '@vkontakte/vkui/dist/vkui.css';
 import {platform} from '@vkontakte/vkui';
 import {
@@ -22,6 +23,7 @@ import {
     Icon56DeleteOutline,
     Icon56AddCircleOutline,
     Icon56LinkCircleOutline,
+    Icon56CancelCircleOutline,
 } from '@vkontakte/icons';
 
 import "./css/Index.css";
@@ -83,6 +85,8 @@ class App extends React.Component {
         this.uninstallWidget = this.uninstallWidget.bind(this);
         this.removeServer = this.removeServer.bind(this);
         this.submitForm = this.submitForm.bind(this);
+        this.setSnackbar = this.setSnackbar.bind(this);
+        this.setTextpage = this.setTextpage.bind(this);
     }
 
     componentDidMount() {
@@ -105,198 +109,128 @@ class App extends React.Component {
             bridge.send('VKWebAppStorageGet', {
                 keys: Object.values(STORAGE_KEYS),
             })
-                .then(data => {
-                    if (data.keys[0].value !== 'true') {
-                        this.setState({activePanel: ROUTES.INTRO});
-                    }
-                })
+            .then(data => {
+                if (data.keys[0].value !== 'true') {
+                    this.setState({activePanel: ROUTES.INTRO});
+                }
+            })
         }
 
         window.addEventListener("popstate", this.AndroidBackButton);
 
         window.addEventListener('offline', () => {
             bridge.send('VKWebAppDisableSwipeBack')
-            this.setState({
-                activePanel: ROUTES.HOME, online: false, history: ['home'], snackbar: <Snackbar
-                    layout='vertical'
-                    duration="1000"
-                    onClose={() => this.setState({snackbar: null})}>
-                    Потеряно соединение с интернетом
-                </Snackbar>
-            })
+            this.setSnackbar('Потеряно соединение с интернетом', 1000)
+            this.setState({activePanel: ROUTES.HOME, online: false, history: ['home']})
         })
 
         window.addEventListener('online', () => {
-            this.setState({
-                online: true
-            })
-            this.setState({
-                textpage: {
-                    title: "Оу, кто вернулся?",
-                    text: "Теперь ты можешь продолжить наслаждаться приложением!",
-                    button: "Окей, понятно!",
-                    success: true,
-                }
-            });
-            this.go('textpage');
+            this.setState({online: true})
+            this.setTextpage("Оу, кто вернулся?", "Теперь ты можешь продолжить наслаждаться приложением!", "Окей, понятно!")
         })
 
         this.setState({popout: null});
+    }
+
+    setTextpage(title, text, button, success) {
+        if (success === undefined)
+            success = true
+        this.setState({
+            textpage: {
+                title: title,
+                text: text,
+                button: button,
+                success: success,
+            }
+        });
+        this.go('textpage');
+    }
+
+    setSnackbar(text, duration) {
+        duration = duration || 4000
+        this.setState({
+            snackbar: <Snackbar
+                layout='vertical'
+                duration={duration}
+                onClose={() => this.setState({snackbar: null})}>
+                {text}
+            </Snackbar>
+        })
     }
 
     submitForm(event) {
         this.setActiveModal(null);
         if (this.state.ip !== undefined && this.state.port !== undefined && this.state.name !== undefined) {
             if (this.state.ip.trim() === '' || this.state.port.trim() === '' || this.state.name.trim() === '') {
-                this.setState({
-                    snackbar: <Snackbar
-                        layout='vertical'
-                        duration="3000"
-                        onClose={() => this.setState({snackbar: null})}>
-                        Поля "IP", "Port", "Название сервера" не должны быть пустыми.
-                    </Snackbar>
-                })
+                this.setSnackbar('Поля "IP", "Port", "Название сервера" не должны быть пустыми', 3000)
             } else {
-                fetch('https://monitoring.lukass.ru/addServer?' + window.location.href.slice(window.location.href.indexOf('?') + 1) + '&game=' + encodeURI(event.target.game.value) + '&name=' + encodeURI(this.state.name.trim()) + '&ip=' + this.state.ip.trim() + '&port=' + this.state.port.trim())
-                .then(response => response.json())
-                .then(data => {
-                    if (data.response === 'ok') {
-                        this.setState({
-                            ip: undefined,
-                            port: undefined,
-                            name: undefined,
-                            game: undefined,
-                            textpage: {
-                                title: "Сервер добавлен!",
-                                text: "Сервер успешно добавлен и привязан к твоему аккаунту.",
-                                button: "Оки-доки!",
-                                success: true,
-                            }
-                        });
-                        this.go('textpage');
-                    } else if (data.response === 'limit') {
-                        this.setState({
-                            snackbar: <Snackbar
-                                layout='vertical'
-                                duration="1500"
-                                onClose={() => this.setState({snackbar: null})}>
-                                Достигнут лимит количества серверов
-                            </Snackbar>
-                        });
-                    } else if (data.response === 'server_already_added') {
-                        this.setState({
-                            snackbar: <Snackbar
-                                layout='vertical'
-                                duration="1500"
-                                onClose={() => this.setState({snackbar: null})}>
-                                Сервер с таким айпи и портом уже существует.
-                            </Snackbar>
-                        });
-                    } else if (data.response === 'wrong_ip') {
-                        this.setState({
-                            snackbar: <Snackbar
-                                layout='vertical'
-                                duration="1500"
-                                onClose={() => this.setState({snackbar: null})}>
-                                Неверный адрес сервера
-                            </Snackbar>
-                        });
-                    } else {
-                        this.setState({
-                            snackbar: <Snackbar
-                                layout='vertical'
-                                duration="1500"
-                                onClose={() => this.setState({snackbar: null})}>
-                                Упс, что-то пошло не так...
-                            </Snackbar>
-                        });
+                fetch2('addServer', 'game=' + encodeURI(event.target.game.value) + '&name=' + encodeURI(this.state.name.trim()) + '&ip=' + this.state.ip.trim() + '&port=' + this.state.port.trim()).then(data => {
+                    switch(data.response) {
+                        case 'ok':
+                            this.setState({
+                                ip: undefined,
+                                port: undefined,
+                                name: undefined,
+                                game: undefined
+                            });
+                            this.setTextpage("Сервер добавлен!", "Сервер успешно добавлен и привязан к твоему аккаунту.", "Оки-доки!")
+                        break;
+
+                        case 'limit':
+                            this.setSnackbar('Достигнут лимит количества серверов', 1500)
+                        break;
+                        
+                        case 'server_already_added':
+                            this.setSnackbar('Сервер с таким айпи и портом уже существует', 1500)
+                        break;
+                        
+                        case 'wrong_ip':
+                            this.setSnackbar('Неверный адрес сервера', 1500)
+                        break;
+
+                        default:
+                            this.setSnackbar('Упс, что-то пошло не так...', 1500)
+                        break;
                     }
                 })
                 .catch(() => {
-                    this.setState({
-                        snackbar: <Snackbar
-                            layout='vertical'
-                            onClose={() => this.setState({snackbar: null})}>
-                            Упс, что-то пошло не так...
-                        </Snackbar>
-                    });
+                    this.setSnackbar('Упс, что-то пошло не так...', 2000)
                 });
             }
         } else {
-            this.setState({
-                snackbar: <Snackbar
-                    layout='vertical'
-                    duration="3000"
-                    onClose={() => this.setState({snackbar: null})}>
-                    Поля "IP", "Port", "Название сервера" не должны быть пустыми.
-                </Snackbar>
-            })
+            this.setSnackbar('Поля "IP", "Port", "Название сервера" не должны быть пустыми', 3000)
         }
     }
 
     removeServer() {
-        fetch('https://monitoring.lukass.ru/removeServer?ip=' + this.state.server.ip + '&port=' + this.state.server.port + '&' + window.location.href.slice(window.location.href.indexOf('?') + 1))
-            .then(response => response.json())
-            .then(data => {
-                if (data.response === 'ok') {
-                    this.setState({
-                        textpage: {
-                            title: "Твоя песенка спета!",
-                            text: "Сервер успешно удалён из мониторинга. Если у Вас установлен виджет и в нём есть этот сервер, то через несколько минут он исчезнет.",
-                            button: "Принято!",
-                            success: true,
-                        }
-                    });
-                    this.go('textpage');
-                }
-            })
-            .catch(() => {
-                this.setState({
-                    snackbar: <Snackbar
-                        layout='vertical'
-                        onClose={() => this.setState({snackbar: null})}>
-                        Что-то пошло не так...
-                    </Snackbar>
-                });
-            })
+        fetch2('removeServer', 'ip=' + this.state.server.ip + '&port=' + this.state.server.port).then(data => {
+            if (data.response === 'ok')
+                this.setTextpage("Твоя песенка спета!", "Сервер успешно удалён из мониторинга. Если у Вас установлен виджет и в нём есть этот сервер, то через несколько минут он исчезнет.", "Принято!")
+        })
+        .catch(() => {
+            this.setSnackbar('Упс, что-то пошло не так...', 2000)
+        })
     }
 
     uninstallWidget() {
-        fetch('https://monitoring.lukass.ru/deleteWidget?' + window.location.href.slice(window.location.href.indexOf('?') + 1))
-            .then(response => response.json())
-            .then(data => {
-                if (data.response === 'ok') {
-                    this.setState({
-                        textpage: {
-                            title: "Виджет отключен!",
-                            text: "Теперь при заходе в группу никто не увидит онлайн ваших серверов :c",
-                            button: "Окей!",
-                            success: true,
-                        }
-                    });
-                    this.go('textpage');
-                }
-                if (data.response === 'app_removed') {
-                    this.setState({
-                        textpage: {
-                            title: "Оуч! Не получилось!",
-                            text: "Не удалось удалить виджет. Попробуйте позже. Возможно, Вы удалили приложение из своего сообщества?",
-                            button: "Понятно",
-                            success: false,
-                        }
-                    });
-                    this.go('textpage');
-                }
-            })
-            .catch(() => {
-                this.setState({
-                    snackbar: <Snackbar
-                        layout='vertical'
-                        onClose={() => this.setState({snackbar: null})}>
-                        Что-то пошло не так...
-                    </Snackbar>
-                });
-            })
+        fetch2('deleteWidget').then(data => {
+            switch(data.response) {
+                case 'ok':
+                    this.setTextpage("Виджет отключен!", "Теперь при заходе в группу никто не увидит онлайн ваших серверов :c", "Окей!")
+                break;
+
+                case 'flood_control':
+                    this.setTextpage("Ох, флуд-контроль!", "Не удалось удалить виджет. Повторите попытку через несколько секунд.", "Без проблем", false)
+                break;
+
+                case 'app_removed':
+                    this.setActiveModal('deleteWidgetError')
+                break;
+            }
+        })
+        .catch(() => {
+            this.setSnackbar('Упс, что-то пошло не так...', 2000)
+        })
     }
 
     getCommunityToken() {
@@ -307,77 +241,26 @@ class App extends React.Component {
             "scope": "app_widget, manage"
         })
         .then(data => {
-            fetch('https://monitoring.lukass.ru/updateToken?token=' + data.access_token + '&' + window.location.href.slice(window.location.href.indexOf('?') + 1))
-                .then(response => response.json())
-                .then(data => {
-                    if (data.response === 'ok') {
-                        this.setState({
-                            snackbar: <Snackbar
-                                layout='vertical'
-                                duration="2000"
-                                onClose={() => this.setState({snackbar: null})}>
-                                Устанавливаем виджет...
-                            </Snackbar>
-                        });
-                        fetch('https://monitoring.lukass.ru/installWidget?group_id=' + group_id + "&" + window.location.href.slice(window.location.href.indexOf('?') + 1))
-                            .then(response => response.json())
-                            .then(data => {
-                                if (data.response === 'ok') {
-                                    this.setState({
-                                        textpage: {
-                                            title: "Виджет установлен!",
-                                            text: "Теперь при заходе в группу все увидят онлайн ваших серверов!",
-                                            button: "Круто!",
-                                            success: true,
-                                        }
-                                    });
-                                    this.go('textpage');
-                                }
-                            }).catch(() => {
-                            this.setState({
-                                snackbar: <Snackbar
-                                    layout='vertical'
-                                    onClose={() => this.setState({snackbar: null})}>
-                                    Не удалось установить виджет
-                                </Snackbar>
-                            });
-                        });
-
-                    } else {
-                        this.setState({
-                            snackbar: <Snackbar
-                                layout='vertical'
-                                onClose={() => this.setState({snackbar: null})}>
-                                Ошибка при установке виджета!
-                            </Snackbar>
-                        });
-                    }
-                }).catch(() => {
-                this.setState({
-                    snackbar: <Snackbar
-                        layout='vertical'
-                        onClose={() => this.setState({snackbar: null})}>
-                        Что-то пошло не так...
-                    </Snackbar>
-                });
-            })
-                .catch(() => {
-                    this.setState({
-                        snackbar: <Snackbar
-                            layout='vertical'
-                            onClose={() => this.setState({snackbar: null})}>
-                            Установка виджета отменена
-                        </Snackbar>
+            fetch2('updateToken', 'token=' +  data.access_token).then(data => {
+                if (data.response === 'ok') {
+                    this.setSnackbar('Устанавливаем виджет...', 2000)
+                    fetch2('installWidget', 'group_id=' + group_id).then(data => {
+                        console.log(data);
+                        if (data.response === 'ok')
+                                this.setTextpage("Виджет установлен!", "Теперь при заходе в группу все увидят онлайн ваших серверов!", "Круто!")
+                    }) .catch(() => {
+                        this.setSnackbar('Не удалось установить виджет...', 2000)
                     });
-                })
+
+                } else {
+                    this.setSnackbar('Произошла непредвиденная ошибка при установке виджета', 2000)
+                }
+            })
+            .catch(() => {
+                this.setSnackbar('Ладно! Установка виджета отменена...', 2000)
+            })
         }).catch(() => {
-        this.setState({
-            snackbar: <Snackbar
-                layout='vertical'
-                onClose={() => this.setState({snackbar: null})}>
-                Не удалось получить токен сообщества
-            </Snackbar>
-        });
+            this.setSnackbar('Не удалось получить токен сообщества', 2000)
     });
     }
 
@@ -389,18 +272,37 @@ class App extends React.Component {
 
         if (activeModal === null) {
             modalHistory = [];
-        } else if (modalHistory.indexOf(activeModal) !== -1) {
-            modalHistory = modalHistory.splice(0, modalHistory.indexOf(activeModal) + 1);
+            if (platform() !== 'ios') {
+                setTimeout(() => {
+                    this.setState({
+                        activeModal,
+                        modalHistory,
+                        groupID,
+                        server: {ip: host, port: port},
+                    });
+                }, 350)
+            } else {
+                this.setState({
+                    activeModal,
+                    modalHistory,
+                    groupID,
+                    server: {ip: host, port: port},
+                });
+            }
         } else {
-            modalHistory.push(activeModal);
+            if (modalHistory.indexOf(activeModal) !== -1) {
+                modalHistory = modalHistory.splice(0, modalHistory.indexOf(activeModal) + 1);
+            } else {
+                modalHistory.push(activeModal);
+            }
+    
+            this.setState({
+                activeModal,
+                modalHistory,
+                groupID,
+                server: {ip: host, port: port},
+            });
         }
-
-        this.setState({
-            activeModal,
-            modalHistory,
-            groupID,
-            server: {ip: host, port: port},
-        });
     };
 
     viewIntro() {
@@ -410,14 +312,8 @@ class App extends React.Component {
                 value: "true",
             });
             this.setState({activePanel: ROUTES.HOME});
-        } catch (error) {
-            this.setState({
-                snackbar: <Snackbar
-                    layout='vertical'
-                    onClose={() => this.setState({snackbar: null})}>
-                    Упс, что-то пошло не так...
-                </Snackbar>
-            })
+        } catch {
+            this.setSnackbar('Упс, что-то пошло не так...', 2000)
         }
 
     }
@@ -433,36 +329,15 @@ class App extends React.Component {
                 this.setState({history: history, activePanel: panel});
             }
             document.body.style.overflow = "visible";
-            fetch('https://monitoring.lukass.ru/verify?' + window.location.href.slice(window.location.href.indexOf('?') + 1))
-                .then(response => response.json())
-                .then(data => {
-                    if (data.response !== 'ok') {
-                        this.setState({
-                            activePanel: ROUTES.HOME, snackbar: <Snackbar
-                                layout='vertical'
-                                onClose={() => this.setState({snackbar: null})}>
-                                Упс, что-то пошло не так...
-                            </Snackbar>
-                        });
-                    }
-                })
-                .catch(() => {
-                    this.setState({
-                        activePanel: ROUTES.HOME, snackbar: <Snackbar
-                            layout='vertical'
-                            onClose={() => this.setState({snackbar: null})}>
-                            Упс, что-то пошло не так...
-                        </Snackbar>
-                    });
-                });
-        } else {
-            this.setState({
-                snackbar: <Snackbar
-                    layout='vertical'
-                    onClose={() => this.setState({snackbar: null})}>
-                    Нет соединения с интернетом
-                </Snackbar>
+            fetch2('verify').then(data => {
+                if (data.response !== 'ok')
+                    this.setSnackbar('Упс, что-то пошло не так...', 2000)
+            })
+            .catch(() => {
+                this.setSnackbar('Упс, что-то пошло не так...', 2000)
             });
+        } else {
+            this.setSnackbar('Нет соединения с интернетом', 2000)
         }
     };
 
@@ -530,7 +405,6 @@ class App extends React.Component {
                     subheader="После подтверждения группа будет отвязана от сервиса"
                     actions={
                         <Button size="l" mode="primary" onClick={() => {
-                            this.setActiveModal(null);
                             this.uninstallWidget();
                         }}>
                             Отключить виджет
@@ -589,6 +463,31 @@ class App extends React.Component {
                 </ModalCard>
 
                 <ModalCard
+                    id='deleteWidgetError'
+                    onClose={() => {
+                        this.setActiveModal(null);
+                    }}
+                    icon={<Icon56CancelCircleOutline />}
+                    header="Оуч! Не получилось!"
+                    subheader={"Не удалось удалить виджет. Возможно, Вы удалили приложение из своего сообщества? Если это действительно так, то удалите виджет принудительно."}
+                    actions={
+                        <Button size="l" mode="primary" onClick={() => {
+                            this.setActiveModal(null);
+                            fetch2('deleteWidgetAnyway').then(data => {
+                                if (data.response === 'ok')
+                                    this.setTextpage("Да ладно, получилось!", "Вы принудительно удалили виджет из своего сообщества.", "Воу, ясненько")
+                                else 
+                                    this.setSnackbar("Не удалось принудительно отключить виджет", 1500)
+                            })
+                        }}>
+                            Удалить принудительно
+                        </Button>
+                    }
+                >
+
+                </ModalCard>
+
+                <ModalCard
                     id='addServer'
                     onClose={() => {
                         this.setActiveModal(null);
@@ -638,7 +537,7 @@ class App extends React.Component {
                                     <Input name="ip" placeholder="192.168.0.1" required value={this.state.ip} onChange={(e) => {this.setState({ ip: e.target.value.replace(/[^\w\s\.+]/gi, "")} )}} maxLength={32} />
                                 </FormItem>
                                 <FormItem top="PORT Сервера">
-                                    <Input name="port" type="tel" placeholder="27015" required value={this.state.port} onChange={(e) => {this.setState({ port: e.target.value.replace(/\D+/g, "")} )}} maxLength={5}/>
+                                    <Input name="port" inputMode="numeric" placeholder="27015" required value={this.state.port} onChange={(e) => {this.setState({ port: e.target.value.replace(/\D+/g, "")} )}} maxLength={5}/>
                                 </FormItem>
                             </FormLayoutGroup>
 
@@ -659,9 +558,9 @@ class App extends React.Component {
                 <View activePanel={this.state.activePanel} modal={modal} popout={this.state.popout}
                       onSwipeBack={this.goBack} history={this.state.history}>
                     <Home id={ROUTES.HOME} go={this.go} clickOnLink={this.clickOnLink}
-                          snackbarError={this.state.snackbar} setActiveModal={this.setActiveModal}/>
+                          snackbar={this.state.snackbar} setSnackbar={this.setSnackbar} setActiveModal={this.setActiveModal}/>
                     <Intro id={ROUTES.INTRO} go={this.viewIntro} user={this.state.user}
-                           snackbarError={this.state.snackbar}/>
+                           snackbar={this.state.snackbar}/>
                     <FAQ id={ROUTES.FAQ} go={this.go}/>
                     <Textpage id={ROUTES.TEXTPAGE} title={this.state.textpage.title} text={this.state.textpage.text}
                               button={this.state.textpage.button} success={this.state.textpage.success} go={this.go}/>

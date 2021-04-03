@@ -1,10 +1,10 @@
 import React, { Fragment } from 'react';
+import fetch2 from '../components/Fetch'
 import {
     Avatar,
     Group,
     PanelHeader,
     Panel,
-    Snackbar,
     Card,
     Div,
     Title,
@@ -31,59 +31,55 @@ class InGroupWidget extends React.Component {
     }
 
     componentDidMount() {
-        fetch('https://monitoring.lukass.ru/getServersInGroupWidget?' + window.location.href.slice(window.location.href.indexOf('?') + 1))
-            .then(response => response.json())
-            .then(data => {
-                if (data.response !== 'no_servers') {
-                    let rows = [];
-                    data.map(el => {
-                        {
-                            el.maxPlayers !== 0 &&
-                            rows.push(<Card key={el.id}>
-                                <RichCell
-                                    style={{marginBottom: 10}}
-                                    before={<Avatar mode="app" size={54}><Icon28ComputerOutline/></Avatar>}
-                                    text={ el.map ? "Карта: " + el.map : "Карта: неизвестно"}
-                                    after={el.players + "/" + el.maxPlayers}
-                                    caption={"Игра: " + el.game}
-                                    onClick={() => this.props.setActiveModal('connectToTheServer', el.host, el.port)}
-                                >
-                                    {el.name}
-                                </RichCell>
-                            </Card>);
-                        }
-                        {
-                            el.maxPlayers === 0 &&
-                            rows.push(<Card key={el.id}>
-                                <RichCell
-                                    style={{marginBottom: 10}}
-                                    before={<Avatar mode="app" size={54}><Icon28CancelCircleOutline/></Avatar>}
-                                    text={"• Сервер выключен"}
-                                    disabled
-                                    after={el.players + "/" + el.maxPlayers}
-                                    caption={"Игра: " + el.game}
-                                >
-                                    {el.name}
-                                </RichCell>
-                            </Card>);
-                        }
-                    })
-                    this.setState({rows: rows, spinner: false});
-                } else {
-                    this.setState({status: false, spinner: false});
-                }
-            })
-            .catch(() => {
-                this.setState({
-                    status: false,
-                    spinner: false,
-                });
+        fetch2('getServersInGroupWidget').then(data => {
+            if (data.response !== 'no_servers') {
+                let rows = [];
+                data.map(el => {
+                    {
+                        el.maxPlayers !== 0 &&
+                        rows.push(<Card key={el.id}>
+                            <RichCell
+                                style={{marginBottom: 10}}
+                                before={<Avatar mode="app" size={54}><Icon28ComputerOutline/></Avatar>}
+                                text={ el.map ? "Карта: " + el.map : "Карта: неизвестно"}
+                                after={el.players + "/" + el.maxPlayers}
+                                caption={"Игра: " + el.game}
+                                onClick={() => this.props.setActiveModal('connectToTheServer', el.host, el.port)}
+                            >
+                                {el.name}
+                            </RichCell>
+                        </Card>);
+                    }
+                    {
+                        el.maxPlayers === 0 &&
+                        rows.push(<Card key={el.id}>
+                            <RichCell
+                                style={{marginBottom: 10}}
+                                before={<Avatar mode="app" size={54}><Icon28CancelCircleOutline/></Avatar>}
+                                text={"• Сервер выключен"}
+                                disabled
+                                after={el.players + "/" + el.maxPlayers}
+                                caption={"Игра: " + el.game}
+                            >
+                                {el.name}
+                            </RichCell>
+                        </Card>);
+                    }
+                })
+                this.setState({rows: rows, spinner: false});
+            } else {
+                this.setState({status: false, spinner: false});
+            }
+        }).catch(() => {
+            this.setState({
+                status: false,
+                spinner: false,
             });
-
+        });
     }
 
     render() {
-        let {id, go, snackbarError} = this.props;
+        let {id, go, snackbar} = this.props;
         return (
             <Panel id={id} popout={this.state.popout}>
                 <PanelHeader separator={false}>Игровые сервера</PanelHeader>
@@ -127,7 +123,7 @@ class InGroupWidget extends React.Component {
                 </div>
                 }
                 {this.state.snackbar}
-                {snackbarError}
+                {snackbar}
             </Panel>
         )
     }
