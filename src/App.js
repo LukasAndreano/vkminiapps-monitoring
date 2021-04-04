@@ -13,6 +13,7 @@ import {
   ConfigProvider,
   FormItem,
   FormLayoutGroup,
+  FormStatus,
   FormLayout,
   Input,
   Select,
@@ -56,12 +57,14 @@ class App extends React.Component {
       popout: <ScreenSpinner size="large" />,
       snackbar: null,
       history: ["home"],
+      disabled: false,
       groupID: null,
       activeModal: null,
       modalHistory: [],
       ip: "",
       name: "",
       port: "",
+      game: "",
       server: {
         ip: null,
         port: null,
@@ -72,6 +75,10 @@ class App extends React.Component {
         text: null,
         button: null,
         success: true,
+      },
+      formstatus: {
+        title: null,
+        text: null,
       },
       loaded: false,
     };
@@ -87,6 +94,7 @@ class App extends React.Component {
     this.submitForm = this.submitForm.bind(this);
     this.setSnackbar = this.setSnackbar.bind(this);
     this.setTextpage = this.setTextpage.bind(this);
+    this.blockButton = this.blockButton.bind(this);
   }
 
   componentDidMount() {
@@ -171,7 +179,6 @@ class App extends React.Component {
   }
 
   submitForm(event) {
-    this.setActiveModal(null);
     if (
       this.state.ip !== undefined &&
       this.state.port !== undefined &&
@@ -182,10 +189,7 @@ class App extends React.Component {
         this.state.port.trim() === "" ||
         this.state.name.trim() === ""
       ) {
-        this.setSnackbar(
-          'Поля "IP", "Port", "Название сервера" не должны быть пустыми',
-          3000
-        );
+        this.setState({formstatus: {title: "А чего так пусто то?", text: "Поля 'IP', 'Port', 'Название сервера' не должны быть пустыми"}});
       } else {
         fetch2(
           "addServer",
@@ -201,7 +205,9 @@ class App extends React.Component {
           .then((data) => {
             switch (data.response) {
               case "ok":
+                this.setActiveModal(null);
                 this.setState({
+                  formstatus: {title: null, text: null},
                   ip: undefined,
                   port: undefined,
                   name: undefined,
@@ -215,34 +221,30 @@ class App extends React.Component {
                 break;
 
               case "limit":
-                this.setSnackbar("Достигнут лимит количества серверов", 1500);
+                this.setState({formstatus: {title: "Опаньки", text: "Достигнут лимит количества серверов"}});
                 break;
 
               case "server_already_added":
-                this.setSnackbar(
-                  "Сервер с таким айпи и портом уже существует",
-                  1500
-                );
+                this.setState({formstatus: {title: "Дубликат? Зачем?", text: "Сервер с таким айпи и портом уже существует"}});
                 break;
 
               case "wrong_ip":
-                this.setSnackbar("Неверный адрес сервера", 1500);
+                this.setState({formstatus: {title: "Неверный адрес сервера"}});
                 break;
 
               default:
+                this.setActiveModal(null);
                 this.setSnackbar("Упс, что-то пошло не так...", 1500);
                 break;
             }
           })
           .catch(() => {
+            this.setActiveModal(null);
             this.setSnackbar("Упс, что-то пошло не так...", 2000);
           });
       }
     } else {
-      this.setSnackbar(
-        'Поля "IP", "Port", "Название сервера" не должны быть пустыми',
-        3000
-      );
+      this.setState({formstatus: {title: "А чего так пусто то?", text: "Поля 'IP', 'Port', 'Название сервера' не должны быть пустыми"}});
     }
   }
 
@@ -313,15 +315,22 @@ class App extends React.Component {
         fetch2("updateToken", "token=" + data.access_token)
           .then((data) => {
             if (data.response === "ok") {
+              document.body.style.pointerEvents = "none";
               this.setSnackbar("Устанавливаем виджет...", 2000);
               fetch2("installWidget", "group_id=" + group_id)
                 .then((data) => {
-                  console.log(data);
+                  document.body.style.pointerEvents = "all";
                   if (data.response === "ok")
                     this.setTextpage(
                       "Виджет установлен!",
                       "Теперь при заходе в группу все увидят онлайн ваших серверов!",
                       "Круто!"
+                    );
+                  if (data.response === 'error')
+                    this.setTextpage(
+                      "Воу, что произошло?",
+                      "К сожалению, мы не смогли установить виджет по неизвестной нам причине. Повторите попытку позже, пожалуйста. Обратите внимание, что ошибка может возникать из-за имён серверов (Пример; █☆☆☆ ARK PUBLIC ☆☆☆█)",
+                      "Эх, окей!"
                     );
                 })
                 .catch(() => {
@@ -450,6 +459,15 @@ class App extends React.Component {
       }
     }
   };
+
+  blockButton() {
+    setTimeout(() => {
+      this.setState({disabled: true})
+      setTimeout(() => {
+        this.setState({disabled: false})
+      }, 2000)
+    }, 50)
+  }
 
   clickOnLink() {
     document.body.style.pointerEvents = "none";
@@ -621,6 +639,15 @@ class App extends React.Component {
                 }}
                 style={{ textAlign: "left" }}
               >
+
+                <FormItem>
+                  {this.state.formstatus.title !== null &&
+                  <FormStatus header={this.state.formstatus.title} mode="error">
+                    {this.state.formstatus.text}
+                  </FormStatus>
+                  }
+                </FormItem>
+
                 <FormItem top="Выберите игру">
                   <Select
                     required
@@ -661,17 +688,18 @@ class App extends React.Component {
                     ]}
                   />
                 </FormItem>
-
+                
                 <FormItem top="Название сервера">
                   <Input
                     type="text"
                     name="name"
                     value={this.state.name}
-                    autocomplete="off"
+                    autoComplete="off"
+                    required
                     onChange={(e) => {
                       this.setState({
                         name: e.target.value
-                          .replace(/[@+#+*+?+&++]/gi, "")
+                          .replace(/[@+#+*+?+&+%++]/gi, "")
                           .replace(/\n/, ""),
                       });
                     }}
@@ -687,7 +715,7 @@ class App extends React.Component {
                       placeholder="192.168.0.1"
                       required
                       value={this.state.ip}
-                      autocomplete="off"
+                      autoComplete="off"
                       onChange={(e) => {
                         this.setState({
                           ip: e.target.value
@@ -705,7 +733,7 @@ class App extends React.Component {
                       placeholder="27015"
                       required
                       value={this.state.port}
-                      autocomplete="off"
+                      autoComplete="off"
                       onChange={(e) => {
                         this.setState({
                           port: e.target.value.replace(/\D+/g, ""),
@@ -717,7 +745,9 @@ class App extends React.Component {
                 </FormLayoutGroup>
 
                 <FormItem>
-                  <Button size="l" stretched mode="secondary">
+                  <Button onClick={() => {this.blockButton();}} size="l" stretched mode="secondary" disabled={
+                      this.state.ip === "" || this.state.port === "" || this.state.name === "" || this.state.game === '' || this.state.disabled === true ? true : false
+                  }>
                     Добавить
                   </Button>
                 </FormItem>
