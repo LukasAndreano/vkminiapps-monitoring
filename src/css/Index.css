@@ -13,6 +13,13 @@ input, input:before, input:after {
       -ms-user-select: initial;
       user-select: initial;
 }
+.selected, .selected:before, .selected:after {
+	-webkit-user-select: initial;
+	-khtml-user-select: initial;
+	-moz-user-select: initial;
+	-ms-user-select: initial;
+	user-select: initial;
+}
 .UpdateBlock {
 	margin-bottom: 10px;
 }
