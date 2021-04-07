@@ -63,3 +63,6 @@ a,a:hover,a:active {
 .RichCell__caption {
 	padding-bottom: 2px;
 }
+.modalPadding {
+	margin-top: -20px;
+}

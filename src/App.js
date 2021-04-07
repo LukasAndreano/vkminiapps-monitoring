@@ -9,6 +9,7 @@ import {
   ScreenSpinner,
   Button,
   ModalCard,
+  Div,
   ModalRoot,
   ConfigProvider,
   FormItem,
@@ -17,14 +18,16 @@ import {
   FormLayout,
   Input,
   Select,
+  Alert,
 } from "@vkontakte/vkui";
 
 import {
   Icon56SettingsOutline,
-  Icon56DeleteOutline,
   Icon56AddCircleOutline,
   Icon56LinkCircleOutline,
   Icon56CancelCircleOutline,
+  Icon28CheckCircleFill,
+  Icon28CancelCircleFillRed,
 } from "@vkontakte/icons";
 
 import "./css/Index.css";
@@ -34,6 +37,7 @@ import Intro from "./panels/Intro";
 import FAQ from "./panels/FAQ";
 import Textpage from "./panels/Textpage";
 import InGroupWidget from "./panels/InGroupWidget";
+import Settings from './panels/Settings';
 
 const ROUTES = {
   HOME: "home",
@@ -41,6 +45,7 @@ const ROUTES = {
   FAQ: "faq",
   TEXTPAGE: "textpage",
   INGROUPWIDGET: "ingroupwidget",
+  SETTINGS: "settings",
 };
 
 const STORAGE_KEYS = {
@@ -130,20 +135,22 @@ class App extends React.Component {
 
     window.addEventListener("offline", () => {
       bridge.send("VKWebAppDisableSwipeBack");
-      this.setSnackbar("Потеряно соединение с интернетом", 2000);
+      this.setActiveModal(null)
+      this.setSnackbar("Потеряно соединение с интернетом", 2000)
       this.setState({
         activePanel: ROUTES.HOME,
         online: false,
         history: ["home"],
+        popout: null,
       });
     });
 
     window.addEventListener("online", () => {
       this.setState({ online: true });
       this.setTextpage(
-        "Оу, кто вернулся?",
-        "Теперь ты можешь продолжить наслаждаться приложением!",
-        "Окей, понятно!"
+        "Вы снова с нами!",
+        "Интернет восстановлен, можно пользоваться приложением дальше.",
+        "Понятно"
       );
     });
 
@@ -163,11 +170,16 @@ class App extends React.Component {
     this.go("textpage");
   }
 
-  setSnackbar(text, duration) {
+  setSnackbar(text, duration, success) {
     duration = duration || 4000;
+    if (success === true)
+      success = <Icon28CheckCircleFill />
+    else
+      success = <Icon28CancelCircleFillRed />
     this.setState({
       snackbar: (
         <Snackbar
+          before={success}
           layout="vertical"
           duration={duration}
           onClose={() => this.setState({ snackbar: null })}
@@ -178,7 +190,7 @@ class App extends React.Component {
     });
   }
 
-  submitForm(event) {
+  submitForm() {
     if (
       this.state.ip !== undefined &&
       this.state.port !== undefined &&
@@ -194,7 +206,7 @@ class App extends React.Component {
         fetch2(
           "addServer",
           "game=" +
-            encodeURI(event.target.game.value) +
+            encodeURI(this.state.game) +
             "&name=" +
             encodeURI(this.state.name.trim()) +
             "&ip=" +
@@ -208,24 +220,24 @@ class App extends React.Component {
                 this.setActiveModal(null);
                 this.setState({
                   formstatus: {title: null, text: null},
-                  ip: undefined,
-                  port: undefined,
-                  name: undefined,
-                  game: undefined,
+                  ip: '',
+                  port: '',
+                  name: '',
+                  game: '',
                 });
                 this.setTextpage(
                   "Сервер добавлен!",
-                  "Сервер успешно добавлен и привязан к твоему аккаунту.",
-                  "Оки-доки!"
+                  "Сервер успешно добавлен и привязан к вашему аккаунту.",
+                  "Хорошо!"
                 );
                 break;
 
               case "limit":
-                this.setState({formstatus: {title: "Опаньки", text: "Достигнут лимит количества серверов"}});
+                this.setState({formstatus: {title: "Ах-ох!", text: "Достигнут лимит количества серверов"}});
                 break;
 
               case "server_already_added":
-                this.setState({formstatus: {title: "Дубликат? Зачем?", text: "Сервер с таким айпи и портом уже существует"}});
+                this.setState({formstatus: {title: "Дубликат? Зачем?", text: "Сервер с таким айпи и портом уже привязан к вашему аккаунту"}});
                 break;
 
               case "wrong_ip":
@@ -234,13 +246,13 @@ class App extends React.Component {
 
               default:
                 this.setActiveModal(null);
-                this.setSnackbar("Упс, что-то пошло не так...", 1500);
+                this.setSnackbar("Не удалось создать сервер. Произошла какая-то ошибка...", 1500, false);
                 break;
             }
           })
           .catch(() => {
             this.setActiveModal(null);
-            this.setSnackbar("Упс, что-то пошло не так...", 2000);
+            this.setSnackbar("Не удалось создать сервер. Произошла какая-то ошибка...", 2000, false);
           });
       }
     } else {
@@ -262,7 +274,7 @@ class App extends React.Component {
           );
       })
       .catch(() => {
-        this.setSnackbar("Упс, что-то пошло не так...", 2000);
+        this.setSnackbar("Упс, что-то пошло не так...", 2000, false);
       });
   }
 
@@ -299,7 +311,7 @@ class App extends React.Component {
         }
       })
       .catch(() => {
-        this.setSnackbar("Упс, что-то пошло не так...", 2000);
+        this.setSnackbar("Упс, что-то пошло не так...", 2000, false);
       });
   }
 
@@ -316,7 +328,7 @@ class App extends React.Component {
           .then((data) => {
             if (data.response === "ok") {
               document.body.style.pointerEvents = "none";
-              this.setSnackbar("Устанавливаем виджет...", 2000);
+              this.setSnackbar("Устанавливаем виджет...", 2000, true);
               fetch2("installWidget", "group_id=" + group_id)
                 .then((data) => {
                   document.body.style.pointerEvents = "all";
@@ -334,44 +346,57 @@ class App extends React.Component {
                     );
                 })
                 .catch(() => {
-                  this.setSnackbar("Не удалось установить виджет...", 2000);
+                  this.setSnackbar("Не удалось установить виджет...", 2000, false);
                 });
             } else {
               this.setSnackbar(
                 "Произошла непредвиденная ошибка при установке виджета",
-                2000
+                2000,
+                false
               );
             }
           })
           .catch(() => {
-            this.setSnackbar("Ладно! Установка виджета отменена...", 2000);
+            this.setSnackbar("Ладно! Установка виджета отменена...", 2000, false);
           });
       })
       .catch(() => {
-        this.setSnackbar("Не удалось получить токен сообщества", 2000);
+        this.setSnackbar("Не удалось получить токен сообщества", 2000, false);
       });
   }
 
   setActiveModal(activeModal, host, port, groupID) {
-    host = host || null;
-    port = port || null;
-    activeModal = activeModal || null;
-    let modalHistory = this.state.modalHistory
-      ? [...this.state.modalHistory]
-      : [];
-
-    if (activeModal === null) {
-      modalHistory = [];
-      if (platform() !== "ios") {
+    if (this.state.online === true) {
+      host = host || null;
+      port = port || null;
+      activeModal = activeModal || null;
+      let modalHistory = this.state.modalHistory
+        ? [...this.state.modalHistory]
+        : [];
+      if (activeModal === null) {
+        modalHistory = [];
         setTimeout(() => {
           this.setState({
             activeModal,
             modalHistory,
-            groupID,
-            server: { ip: host, port: port },
           });
-        }, 350);
+          setTimeout(() => {
+            this.setState({
+              groupID,
+              server: { ip: host, port: port },
+            });
+          }, 300);
+        }, 300);
       } else {
+        if (modalHistory.indexOf(activeModal) !== -1) {
+          modalHistory = modalHistory.splice(
+            0,
+            modalHistory.indexOf(activeModal) + 1
+          );
+        } else {
+          modalHistory.push(activeModal);
+        }
+  
         this.setState({
           activeModal,
           modalHistory,
@@ -380,21 +405,13 @@ class App extends React.Component {
         });
       }
     } else {
-      if (modalHistory.indexOf(activeModal) !== -1) {
-        modalHistory = modalHistory.splice(
-          0,
-          modalHistory.indexOf(activeModal) + 1
-        );
-      } else {
-        modalHistory.push(activeModal);
-      }
-
-      this.setState({
-        activeModal,
-        modalHistory,
-        groupID,
-        server: { ip: host, port: port },
-      });
+      setTimeout(() => {
+        this.setState({
+          activeModal: null,
+          modalHistory: [],
+        });
+      }, 300);
+      this.setSnackbar('К сожалению, это действие недоступно без подключения к интернету', 2000, false)
     }
   }
 
@@ -406,7 +423,7 @@ class App extends React.Component {
       });
       this.setState({ activePanel: ROUTES.HOME });
     } catch {
-      this.setSnackbar("Упс, что-то пошло не так...", 2000);
+      this.setSnackbar("Упс, что-то пошло не так...", 2000, false);
     }
   }
 
@@ -416,7 +433,7 @@ class App extends React.Component {
       history.push(panel);
       if (panel === "home") {
         bridge.send("VKWebAppDisableSwipeBack");
-        this.setState({ history: ["home"], activePanel: panel });
+        this.setState({ history: ["home"], activePanel: panel, ip: null, port: null });
       } else {
         this.setState({ history: history, activePanel: panel });
       }
@@ -424,13 +441,13 @@ class App extends React.Component {
       fetch2("verify")
         .then((data) => {
           if (data.response !== "ok")
-            this.setSnackbar("Упс, что-то пошло не так...", 2000);
+            this.setSnackbar("Упс, что-то пошло не так...", 2000, false);
         })
         .catch(() => {
-          this.setSnackbar("Упс, что-то пошло не так...", 2000);
+          this.setSnackbar("Упс, что-то пошло не так...", 2000, false);
         });
     } else {
-      this.setSnackbar("Нет соединения с интернетом", 2000);
+      this.setSnackbar("Нет соединения с интернетом", 2000, false);
     }
   }
 
@@ -489,6 +506,7 @@ class App extends React.Component {
           subheader="Для установки виджета нам нужен токен от вашего сообщества."
           actions={
             <Button
+              className="modalPadding"
               size="l"
               mode="primary"
               onClick={() => {
@@ -510,6 +528,8 @@ class App extends React.Component {
           subheader="После подтверждения группа будет отвязана от сервиса"
           actions={
             <Button
+              className="modalPadding"
+              style={{marginTop: '-20px'}}
               size="l"
               mode="primary"
               onClick={() => {
@@ -525,20 +545,53 @@ class App extends React.Component {
           onClose={() => {
             this.setActiveModal(null);
           }}
-          icon={<Icon56DeleteOutline />}
-          header="Удалить сервер?"
-          subheader={"После подтверждения сервер будет удалён из мониторинга. Если что, вот данные этого сервера: " + this.state.server.ip + ":" + this.state.server.port}
+          icon={<Icon56SettingsOutline />}
+          header={this.state.server.ip + ":" + this.state.server.port}
+          subheader={"Выберите, что Вы хотите сделать с сервером:"}
           actions={
+            <Div className="modalPadding" style={{display: 'flex', width: '100%'}}>
+              <Button
+              size="l"
+              mode="primary"
+              stretched 
+              style={{ marginRight: 8 }}
+              onClick={() => {
+                this.setState({ popout:
+                  <Alert
+                    actions={[{
+                      title: 'Да, удалить',
+                      mode: 'destructive',
+                      autoclose: true,
+                      action: () => {this.removeServer(); this.setActiveModal(null);},
+                    }, {
+                      title: 'Отмена',
+                      autoclose: true,
+                      mode: 'cancel'
+                    }]}
+                    actionsLayout="vertical"
+                    onClose={() => {this.setState({popout: null})}}
+                    header="Подтвердите действие"
+                    text={"Вы уверены, что хотите удалить этот сервер?"}
+                  />
+                });
+
+              }}
+            >
+              Удалить
+            </Button>
             <Button
               size="l"
               mode="primary"
+              stretched 
               onClick={() => {
-                this.setActiveModal(null);
-                this.removeServer();
+                this.setState({ip: this.state.server.ip, port: this.state.server.port})
+                this.go('settings');
+                this.setActiveModal(null)
               }}
             >
-              Удалить сервер
+              Редактировать
             </Button>
+            </Div>
           }
         ></ModalCard>
 
@@ -553,6 +606,7 @@ class App extends React.Component {
           }
           actions={
             <a
+              className="modalPadding"
               href={
                 "steam://connect/" +
                 this.state.server.ip +
@@ -563,6 +617,7 @@ class App extends React.Component {
             >
               {platform() == "vkcom" && (
                 <Button
+                  className="modalPadding"
                   size="l"
                   mode="primary"
                   onClick={() => {
@@ -574,6 +629,7 @@ class App extends React.Component {
               )}
               {platform() != "vkcom" && (
                 <Button
+                  className="modalPadding"
                   size="l"
                   mode="primary"
                   onClick={() => {
@@ -599,6 +655,7 @@ class App extends React.Component {
           }
           actions={
             <Button
+              className="modalPadding"
               size="l"
               mode="primary"
               onClick={() => {
@@ -613,7 +670,8 @@ class App extends React.Component {
                   else
                     this.setSnackbar(
                       "Не удалось принудительно отключить виджет",
-                      1500
+                      1500,
+                      false
                     );
                 });
               }}
@@ -631,16 +689,19 @@ class App extends React.Component {
           icon={<Icon56AddCircleOutline />}
           header="Добавление сервера"
           subheader={
-            <div>
+            <div style={{marginTop: '-30px'}}>
               <FormLayout
                 onSubmit={(e) => {
                   e.preventDefault();
-                  this.submitForm(e);
+                  if (this.state.disabled === false) {
+                    this.submitForm();
+                    this.blockButton();
+                  }
                 }}
                 style={{ textAlign: "left" }}
               >
 
-                <FormItem>
+                <FormItem style={{marginBottom: '-10px', marginTop: 20}}>
                   {this.state.formstatus.title !== null &&
                   <FormStatus header={this.state.formstatus.title} mode="error">
                     {this.state.formstatus.text}
@@ -704,7 +765,7 @@ class App extends React.Component {
                       });
                     }}
                     placeholder="Мой лучший игровой проект!"
-                    maxLength={50}
+                    maxLength={40}
                   />
                 </FormItem>
 
@@ -798,6 +859,16 @@ class App extends React.Component {
               group_id={new URLSearchParams(window.location.search).get(
                 "vk_group_id"
               )}
+            />
+            <Settings
+              id={ROUTES.SETTINGS}
+              go={this.go}
+              setSnackbar={this.setSnackbar}
+              ip={this.state.ip}
+              port={this.state.port}
+              disabled={this.state.disabled}
+              blockButton={this.blockButton}
+              snackbar={this.state.snackbar}
             />
           </View>
         )}

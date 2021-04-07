@@ -50,7 +50,7 @@ class Home extends React.Component {
         this.props.setActiveModal("token", null, null, data.group_id);
       })
       .catch(() => {
-        this.props.setSnackbar("Ладно! Установка виджета отменена...", 2000);
+        this.props.setSnackbar("Ладно! Установка виджета отменена...", 2000, false);
       });
   }
 
@@ -73,7 +73,7 @@ class Home extends React.Component {
                       }
                       text={el.map ? "Карта: " + el.map : "Карта: неизвестно"}
                       after={el.players + "/" + el.maxPlayers}
-                      caption={"Игра: " + el.game}
+                      caption={el.game}
                       onClick={() =>
                         this.props.setActiveModal(
                           "deleteServer",
@@ -100,7 +100,7 @@ class Home extends React.Component {
                       }
                       text={"• Сервер выключен"}
                       after={el.players + "/" + el.maxPlayers}
-                      caption={"Игра: " + el.game}
+                      caption={el.game}
                       onClick={() =>
                         this.props.setActiveModal(
                           "deleteServer",
@@ -254,7 +254,7 @@ class Home extends React.Component {
                       size="m"
                       onClick={() => this.props.setActiveModal("addServer")}
                     >
-                      Нет серверов
+                      Добавить сервер
                     </Button>
                   }
                 >
